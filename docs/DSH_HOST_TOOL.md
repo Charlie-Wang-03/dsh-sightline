@@ -27,7 +27,7 @@ For the repository root, Sightline follows the current DSH-style default root-ma
 2. walk upward to the nearest `.git` marker;
 3. if no marker exists, use `cwd` itself.
 
-The walk probes only the configured root marker. It does not crawl neighboring files.
+The walk probes only the configured root marker. It does not crawl neighboring files. The DSH tool cancellation signal is checked before and during this work and again around report assembly.
 
 ## Three evidence paths
 
@@ -43,7 +43,9 @@ The three surfaces feed the same pure comparison engine and produce one canonica
 
 The canonical tool value is the structured JSON report itself. The model-facing text is only a projection of that same value; it does not run another comparison path.
 
-The first focused integration fixture produces this intentionally divergent shape:
+Because DSH can replay an older tool value or let post-execute policy replace a generic JSON value, the renderer is total: an incompatible stored value renders an explicit unavailable message instead of throwing during presentation.
+
+The first focused integration produces this intentionally divergent shape:
 
 ```text
 Same repo. Different agents. Different rules.
@@ -60,16 +62,22 @@ The exact canonical report also retains evidence kinds, source order, digests wh
 
 ## Focused integration boundary
 
-The current test executes the real `defineTool`-produced `ToolDefinition` against:
+The host integration now follows the same level used by first-party DSH tool tests:
 
-- a temporary filesystem repository with a real `.git` marker and instruction files;
-- a live-session-shaped DSH provenance surface matching the previously verified public Session contract;
-- the actual Codex and Claude adapters;
-- the actual comparison and tool-output rendering path.
+1. create a real `@deepseek-ai/cordis` `Context`;
+2. mount the published `@deepseek-ai/dsh-system-prompt@0.1.1-rc.2`;
+3. mount the published `@deepseek-ai/dsh-tools@0.1.1-rc.2` `ToolRuntime`;
+4. mount the published `@deepseek-ai/dsh-session@0.1.1-rc.2` `SessionStore`;
+5. mount the Sightline plugin through `ctx.plugin(...)`;
+6. create a real DSH `Session` with the test repository as its `cwd`;
+7. append typed durable instruction provenance to that Session;
+8. invoke the registered `sightline` tool through `ctx.tools.execute(...)` with a stand-in `Agent` carrying that real Session.
 
-The repository also keeps a compile-time compatibility gate against the published `@deepseek-ai/dsh-session@0.1.1-rc.2` public Session type.
+The test therefore exercises real Cordis plugin mounting, real DSH tool registration and dispatch, a real DSH Session log/surface, actual Codex and Claude adapters, the pure comparison engine, DSH output validation, and the model-facing renderer. Only the full live `Agent` loop is represented by a minimal stand-in, matching the focused pattern used by upstream first-party tool tests.
 
-This milestone proves host/tool wiring. It does **not** yet prove clean-profile bundle installation, Loader composition, or the Web panel; those remain later acceptance steps.
+The repository additionally keeps a compile-time compatibility gate against the published DSH Session type.
+
+This milestone proves host/tool wiring. It does **not** yet prove clean-profile bundle installation, Loader composition from an installed bundle, or the Web panel; those remain later acceptance steps.
 
 ## Fail-closed behavior
 
@@ -77,7 +85,9 @@ The host/tool layer rejects or preserves `unavailable` rather than guessing when
 
 - the tool call has no owning DSH agent;
 - the live Session lacks a `cwd`;
+- caller cancellation is already active or arrives at an observed boundary;
 - the DSH provenance adapter cannot establish authoritative instruction evidence;
-- a static adapter encounters an unsupported or unreadable documented source.
+- a static adapter encounters an unsupported or unreadable documented source;
+- a replayed/policy-replaced JSON tool value no longer matches the current report shape.
 
 No instruction file is modified and no network request is required to build the report.
