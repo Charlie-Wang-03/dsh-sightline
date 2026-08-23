@@ -3,6 +3,7 @@ import { mkdtemp, mkdir, rm, writeFile } from 'node:fs/promises'
 import os from 'node:os'
 import path from 'node:path'
 import test from 'node:test'
+import type { JsonValue } from '@deepseek-ai/dsh-tools'
 
 import { createSightlineTool, findRepositoryRoot } from '../src/index.js'
 import type { DshSessionEventView, DshSessionView, SightlineReport } from '../src/index.js'
@@ -76,7 +77,7 @@ test('DSH sightline tool returns the first real three-column report for its live
     assertPresence(report, 'repo:packages/api/AGENTS.md', ['present', 'present', 'absent'])
     assertPresence(report, 'repo:.claude/rules/always.md', ['absent', 'absent', 'present'])
 
-    const rendered = tool.output.render({}, value)
+    const rendered = tool.output.render({}, value as JsonValue)
     assert.equal(rendered.length, 1)
     assert.equal(rendered[0]?.type, 'text')
     if (rendered[0]?.type !== 'text') throw new Error('Sightline tool did not render text output')
