@@ -11,7 +11,7 @@
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "test": "pnpm run build && node --test dist/tests/core.test.js",
+    "test": "pnpm run build && node --test dist/tests/*.test.js",
     "check": "pnpm run typecheck && pnpm run test"
   },
   "devDependencies": {
