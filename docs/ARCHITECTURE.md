@@ -199,13 +199,34 @@ The engine can therefore report:
 
 No prose-content similarity or contradiction inference belongs here in v0.1.
 
-## 10. Presentation surfaces
+## 10. DSH host/tool surface
 
-### Machine-readable surface
+The first machine-readable host surface is implemented in `src/host/dsh-tool.ts`.
 
-A DSH tool or host API should return the canonical `SightlineReport` or a lossless serializable projection of it.
+It registers one argument-free `sightline` tool through the public DSH `ctx.tools` registry. DSH already places the calling agent on `ToolRunContext.agent`, so runtime ownership is explicit:
 
-### Web panel
+```text
+sightline tool call
+  -> exec.agent
+  -> exec.agent.session
+  -> DshObservedAdapter
+```
+
+The tool does not consult a global agent list and does not infer which Session the caller intended. A call without an owning agent fails closed.
+
+The Session `cwd` is authoritative. Repository-root discovery walks upward for the nearest `.git` marker and, matching the current DSH workspace-root fallback, uses `cwd` if no marker exists. The same `{ repositoryRoot, cwd }` is then supplied to all three adapters.
+
+The tool returns the canonical `SightlineReport` as JSON. Its model-facing Markdown table is a pure projection of that same report, so there is still only one comparison path.
+
+See [`DSH_HOST_TOOL.md`](DSH_HOST_TOOL.md) for the seam evidence and first three-column example.
+
+## 11. Presentation surfaces
+
+### Machine-readable surface — implemented
+
+The DSH `sightline` tool returns the canonical report as its structured JSON value and renders a compact source-by-agent matrix for the model.
+
+### Web panel — pending
 
 The first UI should be deliberately small:
 
@@ -218,7 +239,7 @@ The first UI should be deliberately small:
 
 Avoid building a general settings dashboard or context analytics suite.
 
-## 11. Package/integration shape
+## 12. Package/integration shape
 
 DeepSeek Harness currently distributes third-party plugins as installable bundles with a `dsh.bundle` manifest and `cordis.patch.yml` layer. Runtime packaging should follow the current supported bundle mechanism rather than patching the DSH repository.
 
@@ -234,62 +255,78 @@ dsh-sightline/
 │   ├── PRODUCT_CONTRACT.md
 │   ├── ARCHITECTURE.md
 │   ├── COMPATIBILITY.md
-│   └── DSH_RUNTIME_SEAM.md
+│   ├── DSH_RUNTIME_SEAM.md
+│   └── DSH_HOST_TOOL.md
 ├── src/
 │   ├── contracts.ts
 │   ├── filesystem.ts
 │   ├── compare.ts
 │   ├── report.ts
 │   ├── index.ts
-│   └── adapters/
-│       ├── dsh.ts
-│       ├── codex.ts
-│       └── claude-code.ts
+│   ├── adapters/
+│   │   ├── dsh.ts
+│   │   ├── codex.ts
+│   │   └── claude-code.ts
+│   └── host/
+│       └── dsh-tool.ts
 └── tests/
     ├── core.test.ts
     ├── dsh-observed.integration.test.ts
+    ├── dsh-host.integration.test.ts
     └── dsh-public-session.compat.ts
 ```
 
-`src/host/` and `src/client/` should be created only when host/tool wiring and the compact panel begin; do not pre-fill them with placeholders.
+The installable `dsh.bundle` manifest, `cordis.patch.yml`, build/prepare packaging path, and clean-profile installation smoke are intentionally not claimed by this milestone. `src/client/` should not be created until the compact panel begins.
 
-## 12. Dependency policy
+## 13. Dependency policy
 
-The core comparison engine should stay dependency-light.
+The core comparison engine remains free of DSH runtime dependencies.
 
-Before adding a runtime package, ask whether the same behavior can be expressed with:
+The host layer uses DSH packages only at the boundary where they are required:
 
-- platform APIs;
-- DSH public services already present in the host;
-- a small pure function.
+- `@deepseek-ai/dsh-tools` supplies the supported `defineTool` / `ctx.tools` contract;
+- `@deepseek-ai/cordis` supplies the plugin `Context` type;
+- both are declared as host peer dependencies rather than bundled duplicate runtimes.
 
-Do not bundle duplicate DSH/Cordis runtimes into the plugin. `@deepseek-ai/dsh-session` is currently a **development-only compatibility dependency** used to prove the structural Session seam at typecheck time; the adapter itself has no runtime import from it.
+`@deepseek-ai/dsh-session` remains a development-only compatibility dependency used to prove the structural Session seam at typecheck time; the observed adapter itself has no runtime import from it.
 
-## 13. Test strategy
+Before adding another runtime package, ask whether the same behavior can be expressed with platform APIs, an existing DSH public service, or a small pure function.
+
+## 14. Test strategy
 
 Current verified layers:
 
 1. pure unit tests for normalization/comparison;
 2. fixture-driven tests for Codex and Claude discovery semantics;
 3. focused DSH provenance integration tests over the documented durable event/source shape;
-4. compile-time compatibility against published `@deepseek-ai/dsh-session@0.1.1-rc.2`.
+4. compile-time compatibility against published `@deepseek-ai/dsh-session@0.1.1-rc.2`;
+5. DSH `defineTool` host wiring with an actual three-column report path over a temporary repository and live-session-shaped DSH provenance.
+
+The host integration fixture deliberately demonstrates:
+
+- `AGENTS.md`: DSH + Codex;
+- `CLAUDE.md`: DSH + Claude;
+- nested `packages/api/AGENTS.md`: DSH + Codex;
+- `.claude/rules/always.md`: Claude only;
+- explicit `Observed` / `Predicted` labels in the tool rendering.
 
 Remaining v0.1 integration layers:
 
-5. DSH host/tool wiring that obtains the live agent/session through a supported public host seam;
 6. packed-plugin install smoke in a clean DSH profile;
 7. one visual/snapshot smoke for the compact panel if the current DSH client testing surface supports it.
 
 A passing static resolver test must never be used as proof of DSH runtime observation.
 
-## 14. Current compatibility baseline
+## 15. Current compatibility baseline
 
 As of 2026-08-23:
 
 - DeepSeek Harness: `0.1.1-rc.2`
 - upstream commit: `b150a551b8d465e31e418e1b2eaf5e79bbb7d28e`
 - published DSH Session compatibility package: `@deepseek-ai/dsh-session@0.1.1-rc.2`
+- host tool API: `@deepseek-ai/dsh-tools@0.1.1-rc.2`
+- Cordis host API: `@deepseek-ai/cordis@4.0.1`
 - Node: `^22.19.0 || >=24.0.0`
 - pnpm: `11.7.0`
 
-Before host wiring, bundle creation, or client integration, re-fetch upstream `master` and re-read the exact public seam being bound because DSH remains a developer preview.
+Before bundle creation or client integration, re-fetch upstream `master` and re-read the exact public seam being bound because DSH remains a developer preview.
