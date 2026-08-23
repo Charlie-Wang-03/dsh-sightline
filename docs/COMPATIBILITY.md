@@ -1,6 +1,6 @@
 # Resolver compatibility notes
 
-Sightline's static adapters model documented behavior. These notes make the implemented boundary explicit so a prediction is never mistaken for runtime evidence.
+Sightline's adapters make their evidence boundary explicit so a prediction is never mistaken for runtime observation.
 
 ## Codex
 
@@ -45,8 +45,18 @@ Important limitation:
 
 ## DeepSeek Harness
 
-The first core milestone deliberately ships only `UnavailableDshAdapter`.
+Compatibility identity: `dsh-session-agent-instructions@0.1.1-rc.2/b150a551`.
 
-This is not a static DSH prediction. It preserves the v0.1 evidence contract: the DSH column may be labelled **observed** only after Sightline is connected to a re-verified public runtime/session provenance seam. Until that integration exists, DSH returns `unavailable` with an explicit diagnostic.
+Authority rechecked on 2026-08-23 against upstream commit `b150a551b8d465e31e418e1b2eaf5e79bbb7d28e`:
 
-The DSH integration baseline remains `0.1.1-rc.2` / `b150a551b8d465e31e418e1b2eaf5e79bbb7d28e` until the integration phase rechecks current upstream authority.
+- the public `Agent` handle exposes its live `session`;
+- the Session log is the append-only source of truth;
+- `session/event` is the post-commit append observer feed;
+- `dsh-agent-instructions` records typed `agent-instructions` sources in durable `user/message` events;
+- `session.surface.nodes` identifies the current model-visible surface.
+
+`DshObservedAdapter` now folds this durable provenance and may return **observed** when the requested cwd matches the live Session and typed instruction provenance is present.
+
+It deliberately returns `unavailable` when the Session or provenance cannot establish the effective surface. In particular, a Session with no typed `agent-instructions` source is not treated as proof of an empty DSH instruction view because the instruction plugin may simply be absent from that composition.
+
+The adapter consumes a structural subset of the public Session handle instead of importing the internal `AgentInstructionSource` declaration from `@deepseek-ai/dsh-agent-instructions/src/state.ts`; that interface is not re-exported from the plugin root. See [`DSH_RUNTIME_SEAM.md`](DSH_RUNTIME_SEAM.md) for the evidence chain and fold contract.
