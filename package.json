@@ -9,10 +9,13 @@
     "node": "^22.19.0 || >=24.0.0"
   },
   "scripts": {
+    "build": "tsc -p tsconfig.json",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "check": "pnpm run typecheck"
+    "test": "pnpm run build && node --test dist/tests/core.test.js",
+    "check": "pnpm run typecheck && pnpm run test"
   },
   "devDependencies": {
-    "typescript": "^6.0.3"
+    "@types/node": "22.20.0",
+    "typescript": "6.0.3"
   }
 }
