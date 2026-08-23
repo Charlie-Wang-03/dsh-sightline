@@ -58,7 +58,7 @@ Represents one logical instruction source after adapter resolution. It should ca
 - a stable normalized source key;
 - display path/name;
 - scope kind;
-- order within that adapter's effective surface;
+- order within that adapter's effective instruction surface;
 - optional content digest when available and safe;
 - adapter-owned metadata needed to explain provenance.
 
@@ -111,15 +111,23 @@ Adapters do **not** own:
 
 ### Evidence source
 
-The DSH column is intended to be runtime-observed.
+The DSH column is runtime-observed from the public Session authority chain verified against DSH `0.1.1-rc.2` / `b150a551b8d465e31e418e1b2eaf5e79bbb7d28e`.
 
-The implementation phase must verify the current public DSH seam that exposes durable instruction provenance for a live session. The baseline repository already emits typed `agent-instructions` source metadata in durable session history, but this is a developer-preview surface and must be re-validated before binding to it.
+The public `Agent` handle exposes `agent.session`. The Session log is append-only, `session/event` is its post-commit observer feed, and `dsh-agent-instructions` records durable `user/message` events with typed `agent-instructions` source data. The current model-visible authority is selected through `session.surface.nodes`.
+
+`DshObservedAdapter` deliberately accepts a structural subset of the public Session handle instead of importing the internal `AgentInstructionSource` interface from `@deepseek-ai/dsh-agent-instructions/src/state.ts`, which is not re-exported from the plugin root. A compile-time compatibility check pins the adapter view against the published `@deepseek-ai/dsh-session@0.1.1-rc.2` type.
+
+See [`DSH_RUNTIME_SEAM.md`](DSH_RUNTIME_SEAM.md) for the detailed evidence chain.
 
 ### Required behavior
 
-- If authoritative session evidence exists, return `observed`.
-- If the relevant public seam is missing, unsupported, or the session has no trustworthy evidence, return `unavailable` with a diagnostic.
+- If authoritative typed instruction provenance exists for the requested Session/cwd, return `observed`.
+- Fold visible `set`, `replace`, and `remove` transitions by their logical DSH instruction scope.
+- Use only events present on the current Session surface when deriving the effective set.
+- If the Session, cwd binding, source shape, or typed provenance cannot establish a trustworthy view, return `unavailable` with a diagnostic.
 - Do not silently reimplement DSH filesystem discovery and label it observed.
+
+The adapter's `order` currently means latest effective **visible-session transition order**, not a separately reconstructed static DSH filesystem precedence model. That distinction is exposed in provenance.
 
 A future product version may add an explicitly labelled DSH prediction mode, but that is outside the v0.1 contract.
 
@@ -127,34 +135,35 @@ A future product version may add an explicitly labelled DSH prediction mode, but
 
 The Codex resolver is static/predictive in v0.1.
 
-It should model documented Codex workspace-instruction discovery, including global/project layering, nested scope traversal to the target `cwd`, documented override/fallback naming, and any documented size/config constraints that materially change the effective source set.
+It models documented Codex workspace-instruction discovery, including global/project layering, nested scope traversal to the target `cwd`, documented override/fallback naming, and the project instruction byte budget.
 
-The resolver must expose a compatibility identifier describing the documentation/behavior version it implements.
+The resolver exposes a compatibility identifier describing the documentation/behavior version it implements.
 
-The implementation must use fixtures to cover at least:
+Current tests cover:
 
-- root-only instruction;
-- nested instruction override/layering;
 - global plus project sources;
+- nested instruction layering;
 - override-file preference;
-- configured fallback names if supported;
-- Windows and POSIX path identity.
+- configured fallback names;
+- repository-bound cwd validation;
+- Windows and POSIX path-key normalization.
 
 ## 7. Claude Code adapter
 
 The Claude resolver is static/predictive in v0.1.
 
-It should model documented Claude Code project/user memory and rule-loading behavior relevant to the target workspace. The architecture must keep always-loaded memory sources distinct from path-scoped rule sources when that distinction affects the effective surface.
+It models documented Claude Code user/project memory and rule-loading behavior relevant to the target workspace. Always-loaded memory/rules remain distinct from path-scoped rules.
 
-The resolver must expose a compatibility identifier.
+The resolver exposes a compatibility identifier.
 
-Fixtures should cover at least:
+Current tests cover:
 
 - user/project `CLAUDE.md` layering;
-- nested/specific instruction scope where documented;
+- nested project memory;
 - `.claude/rules/` always-loaded entries;
-- path-scoped rules;
-- a target path that does and does not match a scoped rule.
+- detection and explicit deferral of path-scoped rules.
+
+Path-scoped rules are not labelled effective from `cwd` alone because Claude activates them when matching files are read.
 
 ## 8. Normalization
 
@@ -171,7 +180,7 @@ Rules:
 
 ## 9. Comparison engine
 
-The comparison layer must be a pure function over normalized surfaces.
+The comparison layer is a pure function over normalized surfaces.
 
 For each normalized source key it derives per-agent presence:
 
@@ -181,7 +190,7 @@ For each normalized source key it derives per-agent presence:
 
 `unknown` is used when an adapter surface is `unavailable` or when that adapter cannot establish the source's status.
 
-The engine should also report:
+The engine can therefore report:
 
 - sources shared by all established surfaces;
 - subset-only sources;
@@ -211,9 +220,9 @@ Avoid building a general settings dashboard or context analytics suite.
 
 ## 11. Package/integration shape
 
-DeepSeek Harness currently distributes third-party plugins as installable bundles with a `dsh.bundle` manifest and `cordis.patch.yml` layer. The runtime implementation should follow the current supported bundle mechanism rather than patching the DSH repository.
+DeepSeek Harness currently distributes third-party plugins as installable bundles with a `dsh.bundle` manifest and `cordis.patch.yml` layer. Runtime packaging should follow the current supported bundle mechanism rather than patching the DSH repository.
 
-Planned repository shape:
+Current repository shape:
 
 ```text
 dsh-sightline/
@@ -223,17 +232,26 @@ dsh-sightline/
 ├── tsconfig.json
 ├── docs/
 │   ├── PRODUCT_CONTRACT.md
-│   └── ARCHITECTURE.md
-└── src/
-    ├── contracts.ts       # normalized domain and adapter contracts
-    ├── index.ts           # package exports
-    ├── core/              # later: normalize + compare
-    ├── adapters/          # later: dsh / codex / claude-code
-    ├── host/              # later: DSH host/tool integration
-    └── client/            # later: compact DSH panel
+│   ├── ARCHITECTURE.md
+│   ├── COMPATIBILITY.md
+│   └── DSH_RUNTIME_SEAM.md
+├── src/
+│   ├── contracts.ts
+│   ├── filesystem.ts
+│   ├── compare.ts
+│   ├── report.ts
+│   ├── index.ts
+│   └── adapters/
+│       ├── dsh.ts
+│       ├── codex.ts
+│       └── claude-code.ts
+└── tests/
+    ├── core.test.ts
+    ├── dsh-observed.integration.test.ts
+    └── dsh-public-session.compat.ts
 ```
 
-Only the first two source files exist in the skeleton. Additional directories should be created when implementation begins, not pre-filled with placeholders.
+`src/host/` and `src/client/` should be created only when host/tool wiring and the compact panel begin; do not pre-fill them with placeholders.
 
 ## 12. Dependency policy
 
@@ -245,17 +263,22 @@ Before adding a runtime package, ask whether the same behavior can be expressed 
 - DSH public services already present in the host;
 - a small pure function.
 
-Do not bundle duplicate DSH/Cordis runtimes into the plugin. DSH-owned runtime packages should use the host-compatible peer/public-service model selected during the integration phase.
+Do not bundle duplicate DSH/Cordis runtimes into the plugin. `@deepseek-ai/dsh-session` is currently a **development-only compatibility dependency** used to prove the structural Session seam at typecheck time; the adapter itself has no runtime import from it.
 
 ## 13. Test strategy
 
-The intended pyramid is:
+Current verified layers:
 
 1. pure unit tests for normalization/comparison;
-2. table/fixture tests for Codex and Claude discovery semantics;
-3. focused DSH host integration proving observed provenance;
-4. packed-plugin install smoke in a clean DSH profile;
-5. one visual/snapshot smoke for the compact panel if the current DSH client testing surface supports it.
+2. fixture-driven tests for Codex and Claude discovery semantics;
+3. focused DSH provenance integration tests over the documented durable event/source shape;
+4. compile-time compatibility against published `@deepseek-ai/dsh-session@0.1.1-rc.2`.
+
+Remaining v0.1 integration layers:
+
+5. DSH host/tool wiring that obtains the live agent/session through a supported public host seam;
+6. packed-plugin install smoke in a clean DSH profile;
+7. one visual/snapshot smoke for the compact panel if the current DSH client testing surface supports it.
 
 A passing static resolver test must never be used as proof of DSH runtime observation.
 
@@ -265,7 +288,8 @@ As of 2026-08-23:
 
 - DeepSeek Harness: `0.1.1-rc.2`
 - upstream commit: `b150a551b8d465e31e418e1b2eaf5e79bbb7d28e`
+- published DSH Session compatibility package: `@deepseek-ai/dsh-session@0.1.1-rc.2`
 - Node: `^22.19.0 || >=24.0.0`
 - pnpm: `11.7.0`
 
-Before the first executable integration commit, re-fetch upstream `master` and re-read the current plugin publishing/configuration docs and the exact session/client seams Sightline will use.
+Before host wiring, bundle creation, or client integration, re-fetch upstream `master` and re-read the exact public seam being bound because DSH remains a developer preview.
