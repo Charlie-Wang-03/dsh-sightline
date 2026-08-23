@@ -17,6 +17,15 @@ export {
   repositoryDisplayPath,
   repositorySourceKey,
 } from './filesystem.js'
+export {
+  apply as applyDshSightlineTool,
+  createSightlineTool,
+  findRepositoryRoot,
+  formatSightlineReportMarkdown,
+  inject as dshSightlineInject,
+  name as dshSightlinePluginName,
+} from './host/dsh-tool.js'
+export type { SightlineToolOptions } from './host/dsh-tool.js'
 export { buildSightlineReport } from './report.js'
 
 export type {
