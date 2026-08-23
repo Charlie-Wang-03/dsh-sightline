@@ -58,8 +58,8 @@ test('real DSH ToolRuntime produces the first three-column Sightline report', as
       agent,
     })
 
-    assert.equal(result.isError, false)
     if (result.isError) throw new Error(result.error.message)
+    assert.equal(result.isError, false)
     const report = result.value as unknown as SightlineReport
 
     assert.equal(report.repositoryRoot, repositoryRoot)
