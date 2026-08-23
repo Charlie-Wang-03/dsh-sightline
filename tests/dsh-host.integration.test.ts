@@ -117,6 +117,27 @@ test('DSH sightline tool rejects executions without an owning live agent', async
   )
 })
 
+test('DSH sightline tool observes caller cancellation before filesystem work', async () => {
+  const tool = createSightlineTool()
+  const controller = new AbortController()
+  controller.abort(new Error('sightline test cancellation'))
+
+  await assert.rejects(
+    () => tool.execute({}, { signal: controller.signal } as never),
+    /sightline test cancellation/,
+  )
+})
+
+test('DSH sightline renderer stays total for incompatible replayed JSON', () => {
+  const tool = createSightlineTool()
+  const rendered = tool.output.render({}, null)
+
+  assert.equal(rendered.length, 1)
+  assert.equal(rendered[0]?.type, 'text')
+  if (rendered[0]?.type !== 'text') throw new Error('Sightline tool did not render text output')
+  assert.match(rendered[0].text, /report unavailable/i)
+})
+
 function dshSession(cwd: string, events: readonly DshSessionEventView[]): DshSessionView {
   return {
     header: { cwd },
