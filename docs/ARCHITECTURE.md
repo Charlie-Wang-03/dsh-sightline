@@ -216,7 +216,7 @@ The tool does not consult a global agent list and does not infer which Session t
 
 The Session `cwd` is authoritative. Repository-root discovery walks upward for the nearest `.git` marker and, matching the current DSH workspace-root fallback, uses `cwd` if no marker exists. The same `{ repositoryRoot, cwd }` is then supplied to all three adapters.
 
-The tool returns the canonical `SightlineReport` as JSON. Its model-facing Markdown table is a pure projection of that same report, so there is still only one comparison path.
+The tool returns the canonical `SightlineReport` as JSON. Its model-facing Markdown table is a pure projection of that same report, so there is still only one comparison path. Caller cancellation is observed at the tool boundary and during root/report work, and presentation of an incompatible replayed JSON value falls back to an explicit unavailable message instead of throwing.
 
 See [`DSH_HOST_TOOL.md`](DSH_HOST_TOOL.md) for the seam evidence and first three-column example.
 
@@ -288,7 +288,7 @@ The host layer uses DSH packages only at the boundary where they are required:
 - `@deepseek-ai/cordis` supplies the plugin `Context` type;
 - both are declared as host peer dependencies rather than bundled duplicate runtimes.
 
-`@deepseek-ai/dsh-session` remains a development-only compatibility dependency used to prove the structural Session seam at typecheck time; the observed adapter itself has no runtime import from it.
+`@deepseek-ai/dsh-session` remains a development-only compatibility dependency used to prove the structural Session seam at typecheck time; the observed adapter itself has no runtime import from it. Additional DSH packages used to reproduce the first-party host-test stack are development-only test dependencies.
 
 Before adding another runtime package, ask whether the same behavior can be expressed with platform APIs, an existing DSH public service, or a small pure function.
 
@@ -300,7 +300,7 @@ Current verified layers:
 2. fixture-driven tests for Codex and Claude discovery semantics;
 3. focused DSH provenance integration tests over the documented durable event/source shape;
 4. compile-time compatibility against published `@deepseek-ai/dsh-session@0.1.1-rc.2`;
-5. DSH `defineTool` host wiring with an actual three-column report path over a temporary repository and live-session-shaped DSH provenance.
+5. real Cordis + published DSH `SystemPrompt` + `ToolRuntime` + `SessionStore` host integration, mounting Sightline through `ctx.plugin(...)` and invoking the registered tool through `ctx.tools.execute(...)` against a real DSH Session.
 
 The host integration fixture deliberately demonstrates:
 
@@ -308,7 +308,9 @@ The host integration fixture deliberately demonstrates:
 - `CLAUDE.md`: DSH + Claude;
 - nested `packages/api/AGENTS.md`: DSH + Codex;
 - `.claude/rules/always.md`: Claude only;
-- explicit `Observed` / `Predicted` labels in the tool rendering.
+- explicit `Observed` / `Predicted` labels in the tool rendering;
+- caller cancellation before filesystem work;
+- total rendering for incompatible replayed generic JSON.
 
 Remaining v0.1 integration layers:
 
