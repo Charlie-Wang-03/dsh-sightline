@@ -19,6 +19,8 @@ export interface SightlineToolOptions {
 }
 
 const DEFAULT_PROJECT_ROOT_MARKERS = ['.git'] as const
+const INCOMPATIBLE_OUTPUT_MESSAGE =
+  'Sightline report unavailable: the stored tool value does not match the current report shape.'
 
 /**
  * Register the first model-facing Sightline surface in DSH.
@@ -43,12 +45,14 @@ export function createSightlineTool(options: SightlineToolOptions = {}) {
       render: (_args, value) => [
         {
           type: 'text',
-          text: formatSightlineReportMarkdown(value as unknown as SightlineReport),
+          text: formatSightlineToolValue(value),
         },
       ],
     },
     isConcurrencySafe: () => true,
     async execute(_args, exec) {
+      exec.signal.throwIfAborted()
+
       if (exec.agent === undefined) {
         throw new Error('Sightline requires an agent-owned DSH tool execution.')
       }
@@ -61,7 +65,9 @@ export function createSightlineTool(options: SightlineToolOptions = {}) {
       const repositoryRoot = await findRepositoryRoot(
         cwd,
         options.projectRootMarkers ?? DEFAULT_PROJECT_ROOT_MARKERS,
+        exec.signal,
       )
+      exec.signal.throwIfAborted()
 
       const report = await buildSightlineReport(
         [
@@ -73,10 +79,11 @@ export function createSightlineTool(options: SightlineToolOptions = {}) {
         ],
         { repositoryRoot, cwd },
       )
+      exec.signal.throwIfAborted()
 
       // The canonical report is deliberately JSON-only. Materializing it once
-      // also strips TypeScript readonly/interface identity before it crosses the
-      // generic DSH `json` tool-output boundary.
+      // strips TypeScript readonly/interface identity and optional `undefined`
+      // fields before it crosses DSH's generic JSON tool-output boundary.
       return JSON.parse(JSON.stringify(report))
     },
   })
@@ -90,13 +97,15 @@ export function createSightlineTool(options: SightlineToolOptions = {}) {
 export async function findRepositoryRoot(
   cwd: string,
   markers: readonly string[] = DEFAULT_PROJECT_ROOT_MARKERS,
+  signal?: AbortSignal,
 ): Promise<string> {
   const resolvedCwd = path.resolve(cwd)
   let current = resolvedCwd
 
   for (;;) {
+    signal?.throwIfAborted()
     for (const marker of markers) {
-      if (await pathExists(path.join(current, marker))) return current
+      if (await pathExists(path.join(current, marker), signal)) return current
     }
 
     const parent = path.dirname(current)
@@ -143,6 +152,46 @@ export function formatSightlineReportMarkdown(report: SightlineReport): string {
   return lines.join('\n')
 }
 
+/**
+ * DSH may replay older tool values or policy-replaced generic JSON. Rendering is
+ * presentation-only, so it must stay total instead of throwing on an obsolete
+ * or incompatible value.
+ */
+export function formatSightlineToolValue(value: unknown): string {
+  if (!looksLikeSightlineReport(value)) return INCOMPATIBLE_OUTPUT_MESSAGE
+  try {
+    return formatSightlineReportMarkdown(value)
+  } catch {
+    return INCOMPATIBLE_OUTPUT_MESSAGE
+  }
+}
+
+function looksLikeSightlineReport(value: unknown): value is SightlineReport {
+  if (!isRecord(value) || value.schemaVersion !== 1 || typeof value.cwd !== 'string') return false
+  if (!isRecord(value.surfaces) || !Array.isArray(value.divergences)) return false
+
+  for (const agent of ['dsh', 'codex', 'claude-code'] as const) {
+    const surface = value.surfaces[agent]
+    if (!isRecord(surface)) return false
+    if (surface.agent !== agent) return false
+    if (!isEvidence(surface.evidence)) return false
+    if (!Array.isArray(surface.diagnostics)) return false
+  }
+
+  return value.divergences.every((row) => {
+    if (!isRecord(row) || typeof row.displayPath !== 'string' || !Array.isArray(row.byAgent)) return false
+    return row.byAgent.every((entry) =>
+      isRecord(entry)
+      && (entry.agent === 'dsh' || entry.agent === 'codex' || entry.agent === 'claude-code')
+      && (entry.presence === 'present' || entry.presence === 'absent' || entry.presence === 'unknown'),
+    )
+  })
+}
+
+function isEvidence(value: unknown): value is SightlineReport['surfaces']['dsh']['evidence'] {
+  return value === 'observed' || value === 'predicted' || value === 'unavailable'
+}
+
 function evidenceLabel(value: SightlineReport['surfaces']['dsh']['evidence']): string {
   switch (value) {
     case 'observed':
@@ -170,11 +219,14 @@ function escapeTableCell(value: string): string {
   return value.replaceAll('|', '\\|').replaceAll('\n', ' ')
 }
 
-async function pathExists(target: string): Promise<boolean> {
+async function pathExists(target: string, signal?: AbortSignal): Promise<boolean> {
+  signal?.throwIfAborted()
   try {
     await stat(target)
+    signal?.throwIfAborted()
     return true
   } catch (error) {
+    signal?.throwIfAborted()
     if (
       typeof error === 'object' &&
       error !== null &&
@@ -185,4 +237,8 @@ async function pathExists(target: string): Promise<boolean> {
     }
     throw error
   }
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value)
 }
