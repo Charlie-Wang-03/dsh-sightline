@@ -2,8 +2,13 @@ export { ClaudeCodeAdapter } from './adapters/claude-code.js'
 export type { ClaudeCodeAdapterOptions } from './adapters/claude-code.js'
 export { CodexAdapter } from './adapters/codex.js'
 export type { CodexAdapterOptions } from './adapters/codex.js'
-export { UnavailableDshAdapter } from './adapters/dsh.js'
-export type { UnavailableDshAdapterOptions } from './adapters/dsh.js'
+export { DshObservedAdapter, UnavailableDshAdapter } from './adapters/dsh.js'
+export type {
+  DshObservedAdapterOptions,
+  DshSessionEventView,
+  DshSessionView,
+  UnavailableDshAdapterOptions,
+} from './adapters/dsh.js'
 export { AGENT_ORDER, compareInstructionSurfaces } from './compare.js'
 export {
   directoryChain,
