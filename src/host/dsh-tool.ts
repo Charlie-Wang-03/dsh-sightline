@@ -29,8 +29,8 @@ const INCOMPATIBLE_OUTPUT_MESSAGE =
  * agent session that invoked it, preventing a model from claiming runtime
  * observation for an unrelated session or cwd.
  */
-export function apply(ctx: Context): void {
-  ctx.tools.register(createSightlineTool())
+export function apply(ctx: Context, options: SightlineToolOptions = {}): void {
+  ctx.tools.register(createSightlineTool(options))
 }
 
 /** Exported for focused host integration tests and future bundle wiring. */
