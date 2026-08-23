@@ -9,6 +9,7 @@
     "verbatimModuleSyntax": true,
     "isolatedModules": true,
     "skipLibCheck": true,
+    "types": ["node"],
     "rootDir": ".",
     "outDir": "dist"
   },
