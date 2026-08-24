@@ -28,7 +28,7 @@ jobs:
           corepack enable
           corepack prepare pnpm@11.7.0 --activate
       - name: Install dependencies
-        run: pnpm install --no-frozen-lockfile
+        run: pnpm install --frozen-lockfile
       - name: Check implementation
         run: pnpm run check
 
@@ -47,7 +47,7 @@ jobs:
           corepack prepare pnpm@11.7.0 --activate
       - name: Build distributable package
         run: |
-          pnpm install --no-frozen-lockfile
+          pnpm install --frozen-lockfile
           mkdir -p .artifacts
           pnpm pack --pack-destination .artifacts
       - name: Verify packed artifact surface
