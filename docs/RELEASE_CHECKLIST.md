@@ -38,7 +38,7 @@ This checklist is the release gate for the first public Sightline release. Passi
 - [x] Browser ToolView registration/render smoke exists.
 - [x] Clean-profile CI exists.
 - [x] Human Windows DSH Web smoke has been completed against `0.1.1-rc.2` on the pre-hardening v0.1 package.
-- [x] Release-candidate CI run `32690717943` passes Ubuntu core, Windows core, packed-artifact validation, and clean-profile installation/export resolution.
+- [x] CI run `32691715922` passes Ubuntu core, Windows core, release dependency audit, packed-artifact validation, and clean-profile installation/export resolution.
 - [ ] Run final Windows local smoke from the final release-candidate artifact.
 
 ## E. Security and privacy release gate
@@ -46,15 +46,15 @@ This checklist is the release gate for the first public Sightline release. Passi
 - [x] Source-backed review identified the repository-symlink containment issue; commit `7f99b314d3c801ccc7f4224dbcd96e6834a35dd7` fixes it and CI covers external-escape rejection plus legitimate internal symlinks.
 - [ ] Run a full Git history secret scan from a local clone; GitHub/API inspection is not an equivalent substitute for scanning every reachable object.
 - [x] Audit commit author/committer metadata for the complete history reachable from `main` plus the current release-readiness branch: maintainer-authored commits use `133667618+Charlie-Wang-03@users.noreply.github.com`, and GitHub-created commits use `noreply@github.com`.
-- [ ] Delete stale development branches before public visibility, or separately audit any branch-only commit history that would remain public.
-- [ ] Run dependency vulnerability review (`pnpm audit` or equivalent) and triage findings rather than blindly suppressing them.
-- [ ] Review package licenses for unexpected incompatible dependencies.
+- [ ] Delete the six stale merged development branches before public visibility: `chore/enable-manual-ci`, `chore/v0.1-contract-skeleton`, `feat/core-resolution-engine`, `feat/dsh-host-tool`, `feat/dsh-observed-adapter`, and `feat/v0.1-productization`. PRs #1–#6 are all confirmed merged; these refs no longer serve active development.
+- [x] Dependency vulnerability review: CI run `32691715922` executes `pnpm audit --audit-level=high` from the frozen lockfile with project scripts disabled and reports **No known vulnerabilities found**.
+- [x] Dependency license review: the same CI run inventories installed dependency licenses; the only license families reported are **MIT** and **Apache-2.0**, with no unexpected incompatible, proprietary, copyleft, or unknown license bucket.
 - [x] CI rejects unexpected development/sensitive paths in the packed artifact; final human tarball inspection remains part of the release-candidate smoke.
 - [ ] Re-run the source-backed security review on the final release diff / commit after all manual evidence is incorporated.
 
 ## F. Public launch surface
 
-- [x] English README rewritten around product value, proof, quick start, trust boundary, and compatibility.
+- [x] English README rewritten around product value, proof, quick start, trust boundary, compatibility, and verification.
 - [x] Simplified Chinese README added as a first-class entry path.
 - [ ] Add one real, publication-safe Sightline ToolView screenshot to the README if it materially improves the launch page.
 - [ ] Configure GitHub repository Description and Topics after public release preparation is complete.
@@ -72,7 +72,7 @@ This checklist is the release gate for the first public Sightline release. Passi
 ## H. GitHub public release
 
 - [ ] Merge the release-readiness PR only after automated and manual gates pass.
-- [ ] Remove stale merged development branches that no longer serve a purpose.
+- [ ] Remove the six stale merged development branches listed above.
 - [ ] Make the repository public.
 - [ ] Enable appropriate default-branch protection.
 - [ ] Enable private vulnerability reporting.
@@ -90,7 +90,7 @@ The repository is **NO-GO for public release** while any of the following remain
 - no verified public installation path;
 - dependency lock / reproducibility gate incomplete;
 - full-history secret audit incomplete;
-- stale branch-only history remains unaudited and would become public;
+- stale merged development branches remain and would expose branch-only history;
 - final release candidate CI or smoke failing;
 - npm package identity / publication not verified.
 
