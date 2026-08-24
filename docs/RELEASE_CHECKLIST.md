@@ -9,6 +9,7 @@ This checklist is the release gate for the first public Sightline release. Passi
 - [x] Core operation is read-only and local-first.
 - [x] Privacy wording distinguishes the full canonical report from the model-facing projection.
 - [x] Model-facing renderer omits absolute workspace paths and full diagnostic messages by default; regression-covered in CI.
+- [x] Repository-scoped instruction discovery rejects canonical symlink/alias targets outside the repository while preserving targets that remain inside.
 
 ## B. Legal and community
 
@@ -32,18 +33,20 @@ This checklist is the release gate for the first public Sightline release. Passi
 ## D. Verification
 
 - [x] TypeScript typecheck exists.
-- [x] Automated suite passes **19 / 19** on the release-readiness branch.
+- [x] Automated suite passes **22 / 22** on Linux after the repository-containment hardening; Windows core CI also passes.
 - [x] Real DSH `ToolRuntime + SessionStore + dsh-fs-local` integration exists.
 - [x] Browser ToolView registration/render smoke exists.
 - [x] Clean-profile CI exists.
 - [x] Human Windows DSH Web smoke has been completed against `0.1.1-rc.2` on the pre-hardening v0.1 package.
-- [x] Final frozen-lockfile CI run `32689385048` passes on Ubuntu, Windows, and clean-profile packed installation.
+- [x] Release-candidate CI run `32690717943` passes Ubuntu core, Windows core, packed-artifact validation, and clean-profile installation/export resolution.
 - [ ] Run final Windows local smoke from the final release-candidate artifact.
 
 ## E. Security and privacy release gate
 
-- [ ] Run a full Git history secret scan from a local clone.
-- [ ] Review commit author metadata for unintended personal email / PII exposure.
+- [x] Source-backed review identified the repository-symlink containment issue; commit `7f99b314d3c801ccc7f4224dbcd96e6834a35dd7` fixes it and CI covers external-escape rejection plus legitimate internal symlinks.
+- [ ] Run a full Git history secret scan from a local clone; GitHub/API inspection is not an equivalent substitute for scanning every reachable object.
+- [x] Audit commit author/committer metadata for the complete history reachable from `main` plus the current release-readiness branch: maintainer-authored commits use `133667618+Charlie-Wang-03@users.noreply.github.com`, and GitHub-created commits use `noreply@github.com`.
+- [ ] Delete stale development branches before public visibility, or separately audit any branch-only commit history that would remain public.
 - [ ] Run dependency vulnerability review (`pnpm audit` or equivalent) and triage findings rather than blindly suppressing them.
 - [ ] Review package licenses for unexpected incompatible dependencies.
 - [x] CI rejects unexpected development/sensitive paths in the packed artifact; final human tarball inspection remains part of the release-candidate smoke.
@@ -86,7 +89,8 @@ The repository is **NO-GO for public release** while any of the following remain
 - privacy contract inconsistent with actual model-facing behavior;
 - no verified public installation path;
 - dependency lock / reproducibility gate incomplete;
-- history / secret audit incomplete;
+- full-history secret audit incomplete;
+- stale branch-only history remains unaudited and would become public;
 - final release candidate CI or smoke failing;
 - npm package identity / publication not verified.
 
