@@ -99,7 +99,7 @@ Sightline is local-first and read-only, but "local-first" does not mean that eve
 
 - Sightline itself makes no additional network request to a Sightline-owned service.
 - Sightline does not modify instruction files.
-- The full canonical report is retained as DSH tool metadata for the local Web ToolView and replay; it includes workspace identity such as `repositoryRoot` / `cwd`.
+- The full canonical report is retained as DSH tool metadata for the Web ToolView and replay; it includes workspace identity such as `repositoryRoot` / `cwd`, and the ToolView may display the absolute session `cwd` and full diagnostic messages. Anyone who can view that DSH Web session can see those details, subject to DSH Web access controls.
 - The **model-facing projection** is narrower: it contains source identities, evidence labels, presence states, and diagnostic codes while omitting absolute workspace paths and full diagnostic messages by default.
 - That model-facing projection is handled by the model/provider configured for the current DSH session like other DSH tool output.
 - Sightline does not send instruction file bodies to a Sightline-owned service.
