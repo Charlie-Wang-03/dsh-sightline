@@ -44,7 +44,11 @@ Sightline does **not** provide or replace:
 - guarantees that a model follows an instruction merely because the instruction is visible;
 - security guarantees for Codex, Claude Code, or DeepSeek Harness themselves.
 
-When Sightline runs as a DSH tool, its model-facing projection is handled by the model/provider configured for that DSH session like other tool output. Sightline itself does not make an additional network request for that projection. See `docs/PRODUCT_CONTRACT.md` for the exact privacy contract.
+When Sightline runs as a DSH tool, its model-facing projection is handled by the model/provider configured for that DSH session like other tool output. Sightline itself does not make an additional network request for that projection.
+
+The dedicated DSH Web ToolView intentionally receives the fuller canonical report through DSH presentation metadata. It may display the absolute session `cwd` and full diagnostic messages. Anyone who can view that DSH Web session may therefore see those details; access to that UI is governed by DeepSeek Harness Web access controls, not by Sightline.
+
+See `docs/PRODUCT_CONTRACT.md` for the exact privacy contract.
 
 ## Upstream issues
 
