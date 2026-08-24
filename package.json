@@ -1,8 +1,26 @@
 {
   "name": "dsh-sightline",
   "version": "0.1.0",
-  "private": true,
-  "description": "Compare the effective instruction surfaces of DeepSeek Harness, Codex, and Claude Code.",
+  "description": "Compare DeepSeek Harness, Codex, and Claude Code instruction surfaces for the same workspace.",
+  "keywords": [
+    "deepseek-harness",
+    "dsh",
+    "dsh-plugin",
+    "codex",
+    "claude-code",
+    "ai-agent",
+    "developer-tools",
+    "agent-instructions"
+  ],
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Charlie-Wang-03/dsh-sightline.git"
+  },
+  "bugs": {
+    "url": "https://github.com/Charlie-Wang-03/dsh-sightline/issues"
+  },
+  "homepage": "https://github.com/Charlie-Wang-03/dsh-sightline#readme",
   "type": "module",
   "packageManager": "pnpm@11.7.0",
   "engines": {
@@ -23,8 +41,12 @@
     "client.js",
     "cordis.patch.yml",
     "README.md",
-    "docs/PACKAGING.md"
+    "docs/PACKAGING.md",
+    "LICENSE"
   ],
+  "publishConfig": {
+    "access": "public"
+  },
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "build:host": "tsc -p tsconfig.json",
