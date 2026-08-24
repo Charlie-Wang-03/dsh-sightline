@@ -32,12 +32,12 @@ This checklist is the release gate for the first public Sightline release. Passi
 ## D. Verification
 
 - [x] TypeScript typecheck exists.
-- [x] Automated suite passes **19 / 19** on the release-readiness branch before the frozen-lockfile gate.
+- [x] Automated suite passes **19 / 19** on the release-readiness branch.
 - [x] Real DSH `ToolRuntime + SessionStore + dsh-fs-local` integration exists.
 - [x] Browser ToolView registration/render smoke exists.
 - [x] Clean-profile CI exists.
 - [x] Human Windows DSH Web smoke has been completed against `0.1.1-rc.2` on the pre-hardening v0.1 package.
-- [ ] Confirm the final frozen-lockfile release-readiness CI passes on Ubuntu, Windows, and clean-profile packed installation.
+- [x] Final frozen-lockfile CI run `32689385048` passes on Ubuntu, Windows, and clean-profile packed installation.
 - [ ] Run final Windows local smoke from the final release-candidate artifact.
 
 ## E. Security and privacy release gate
