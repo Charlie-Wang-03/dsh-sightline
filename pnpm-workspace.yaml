@@ -1,2 +1,5 @@
+overrides:
+  koffi: 3.1.6
+
 allowBuilds:
-  koffi: true
+  koffi@3.1.6: true
