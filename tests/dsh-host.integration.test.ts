@@ -11,7 +11,11 @@ import SessionStore, { SessionId } from '@deepseek-ai/dsh-session'
 import SystemPrompt from '@deepseek-ai/dsh-system-prompt'
 import ToolRuntime, { type JsonValue } from '@deepseek-ai/dsh-tools'
 
-import { createSightlineTool, findRepositoryRoot } from '../src/index.js'
+import {
+  createSightlineTool,
+  findRepositoryRoot,
+  formatSightlineReportMarkdown,
+} from '../src/index.js'
 import type { SightlineReport } from '../src/index.js'
 import * as sightlinePlugin from '../src/host/dsh-tool.js'
 
@@ -99,9 +103,59 @@ test('real DSH ToolRuntime and ctx.fs produce the first three-column Sightline r
     assert.match(rendered, /Claude \(Predicted\)/)
     assert.match(rendered, /AGENTS\.md/)
     assert.match(rendered, /\.claude\/rules\/always\.md/)
+    assert.doesNotMatch(rendered, new RegExp(escapeRegExp(repositoryRoot)))
+    assert.doesNotMatch(rendered, new RegExp(escapeRegExp(cwd)))
   } finally {
     await rm(root, { recursive: true, force: true })
   }
+})
+
+test('model-facing renderer omits absolute workspace paths and full diagnostic messages', () => {
+  const privateRoot = '/Users/example/private/repo'
+  const privateCwd = '/Users/example/private/repo/packages/api'
+  const report: SightlineReport = {
+    schemaVersion: 1,
+    repositoryRoot: privateRoot,
+    cwd: privateCwd,
+    surfaces: {
+      dsh: {
+        agent: 'dsh',
+        evidence: 'unavailable',
+        cwd: privateCwd,
+        resolverVersion: 'dsh-test',
+        sources: [],
+        diagnostics: [
+          {
+            code: 'dsh-session-cwd-mismatch',
+            message: `Private diagnostic mentions ${privateCwd}`,
+          },
+        ],
+      },
+      codex: {
+        agent: 'codex',
+        evidence: 'predicted',
+        cwd: privateCwd,
+        resolverVersion: 'codex-test',
+        sources: [],
+        diagnostics: [],
+      },
+      'claude-code': {
+        agent: 'claude-code',
+        evidence: 'predicted',
+        cwd: privateCwd,
+        resolverVersion: 'claude-test',
+        sources: [],
+        diagnostics: [],
+      },
+    },
+    divergences: [],
+  }
+
+  const rendered = formatSightlineReportMarkdown(report)
+  assert.match(rendered, /dsh: dsh-session-cwd-mismatch/)
+  assert.doesNotMatch(rendered, /Private diagnostic mentions/)
+  assert.doesNotMatch(rendered, new RegExp(escapeRegExp(privateRoot)))
+  assert.doesNotMatch(rendered, new RegExp(escapeRegExp(privateCwd)))
 })
 
 test('repository-root discovery matches the DSH-style nearest marker contract', async () => {
@@ -207,4 +261,8 @@ async function put(root: string, relativePath: string, content: string): Promise
   const target = path.join(root, relativePath)
   await mkdir(path.dirname(target), { recursive: true })
   await writeFile(target, content, 'utf8')
+}
+
+function escapeRegExp(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 }

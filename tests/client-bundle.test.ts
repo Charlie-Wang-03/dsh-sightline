@@ -15,7 +15,11 @@ interface ClientRegistration {
 test('package exposes the supported DSH bundle and web client surfaces', async () => {
   const packageJson = JSON.parse(await readFile(path.resolve('package.json'), 'utf8')) as {
     version: string
+    private?: boolean
+    license?: string
     main: string
+    repository?: { url?: string }
+    publishConfig?: { access?: string }
     exports: Record<string, unknown>
     dsh: {
       bundle: { patch: string }
@@ -25,6 +29,10 @@ test('package exposes the supported DSH bundle and web client surfaces', async (
   const patch = await readFile(path.resolve('cordis.patch.yml'), 'utf8')
 
   assert.equal(packageJson.version, '0.1.0')
+  assert.notEqual(packageJson.private, true)
+  assert.equal(packageJson.license, 'MIT')
+  assert.match(packageJson.repository?.url ?? '', /Charlie-Wang-03\/dsh-sightline/)
+  assert.equal(packageJson.publishConfig?.access, 'public')
   assert.equal(packageJson.main, 'dist/src/index.js')
   assert.equal(packageJson.dsh.bundle.patch, './cordis.patch.yml')
   assert.equal(packageJson.dsh.client.platform, 'web')
