@@ -11,14 +11,17 @@ import type {
 import {
   directoryChain,
   listMarkdownFilesRecursively,
+  nodeReadOnlyFileAccess,
   readFileSnapshot,
   repositoryDisplayPath,
   repositorySourceKey,
 } from '../filesystem.js'
+import type { ReadOnlyFileAccess } from '../filesystem.js'
 
 export interface ClaudeCodeAdapterOptions {
   claudeHome?: string
   resolverVersion?: string
+  fileAccess?: ReadOnlyFileAccess
 }
 
 export class ClaudeCodeAdapter implements InstructionAdapter {
@@ -26,19 +29,26 @@ export class ClaudeCodeAdapter implements InstructionAdapter {
 
   readonly #claudeHome: string
   readonly #resolverVersion: string
+  readonly #fileAccess: ReadOnlyFileAccess
 
   constructor(options: ClaudeCodeAdapterOptions = {}) {
     this.#claudeHome = options.claudeHome ?? path.join(os.homedir(), '.claude')
     this.#resolverVersion = options.resolverVersion ?? 'claude-docs-2026-08-23-cwd-view'
+    this.#fileAccess = options.fileAccess ?? nodeReadOnlyFileAccess
   }
 
   async resolve(input: ResolveInput): Promise<EffectiveInstructionSurface> {
     try {
+      input.signal?.throwIfAborted()
       const sources: InstructionSource[] = []
       const diagnostics: SurfaceDiagnostic[] = []
       let order = 0
 
-      const global = await readFileSnapshot(path.join(this.#claudeHome, 'CLAUDE.md'))
+      const global = await readFileSnapshot(
+        path.join(this.#claudeHome, 'CLAUDE.md'),
+        this.#fileAccess,
+        input.signal,
+      )
       if (global) {
         sources.push({
           sourceKey: 'global:claude-code:CLAUDE.md',
@@ -51,7 +61,12 @@ export class ClaudeCodeAdapter implements InstructionAdapter {
       }
 
       for (const directory of directoryChain(input.repositoryRoot, input.cwd)) {
-        const snapshot = await readFileSnapshot(path.join(directory, 'CLAUDE.md'))
+        input.signal?.throwIfAborted()
+        const snapshot = await readFileSnapshot(
+          path.join(directory, 'CLAUDE.md'),
+          this.#fileAccess,
+          input.signal,
+        )
         if (!snapshot) continue
 
         sources.push({
@@ -65,11 +80,16 @@ export class ClaudeCodeAdapter implements InstructionAdapter {
       }
 
       const rulesRoot = path.join(input.repositoryRoot, '.claude', 'rules')
-      const rulePaths = await listMarkdownFilesRecursively(rulesRoot)
+      const rulePaths = await listMarkdownFilesRecursively(
+        rulesRoot,
+        this.#fileAccess,
+        input.signal,
+      )
       let deferredPathScopedRules = 0
 
       for (const rulePath of rulePaths) {
-        const snapshot = await readFileSnapshot(rulePath)
+        input.signal?.throwIfAborted()
+        const snapshot = await readFileSnapshot(rulePath, this.#fileAccess, input.signal)
         if (!snapshot) continue
 
         if (hasPathScope(snapshot.content)) {
@@ -105,6 +125,7 @@ export class ClaudeCodeAdapter implements InstructionAdapter {
         diagnostics,
       }
     } catch (error) {
+      input.signal?.throwIfAborted()
       return unavailableSurface(input, this.#resolverVersion, error)
     }
   }

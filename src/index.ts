@@ -13,10 +13,25 @@ export { AGENT_ORDER, compareInstructionSurfaces } from './compare.js'
 export {
   directoryChain,
   isWithinRepository,
+  nodeReadOnlyFileAccess,
   normalizePathForKey,
   repositoryDisplayPath,
   repositorySourceKey,
 } from './filesystem.js'
+export type {
+  ReadOnlyDirectoryEntry,
+  ReadOnlyFileAccess,
+  ReadOnlyFileInfo,
+} from './filesystem.js'
+export {
+  apply as applyDshSightlineTool,
+  createSightlineTool,
+  findRepositoryRoot,
+  formatSightlineReportMarkdown,
+  inject as dshSightlineInject,
+  name as dshSightlinePluginName,
+} from './host/dsh-tool.js'
+export type { SightlineToolOptions } from './host/dsh-tool.js'
 export { buildSightlineReport } from './report.js'
 
 export type {

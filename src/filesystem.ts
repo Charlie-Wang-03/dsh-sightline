@@ -9,6 +9,73 @@ export interface FileSnapshot {
   bytes: number
 }
 
+export interface ReadOnlyFileInfo {
+  type: 'file' | 'directory' | 'other'
+  size?: number
+}
+
+export interface ReadOnlyDirectoryEntry {
+  name: string
+  type: 'file' | 'directory' | 'other'
+}
+
+/**
+ * Minimal read-only filesystem capability required by instruction resolvers.
+ *
+ * Standalone use defaults to the host Node filesystem. DSH host integration
+ * supplies an implementation backed by the public `ctx.fs` capability so the
+ * same adapters run in the Harness filesystem execution world.
+ */
+export interface ReadOnlyFileAccess {
+  stat(absolutePath: string, signal?: AbortSignal): Promise<ReadOnlyFileInfo | undefined>
+  readText(absolutePath: string, signal?: AbortSignal): Promise<string>
+  listDir(
+    absolutePath: string,
+    signal?: AbortSignal,
+  ): Promise<readonly ReadOnlyDirectoryEntry[] | undefined>
+}
+
+export const nodeReadOnlyFileAccess: ReadOnlyFileAccess = {
+  async stat(absolutePath, signal) {
+    signal?.throwIfAborted()
+    try {
+      const info = await stat(absolutePath)
+      signal?.throwIfAborted()
+      return {
+        type: info.isFile() ? 'file' : info.isDirectory() ? 'directory' : 'other',
+        size: info.size,
+      }
+    } catch (error) {
+      signal?.throwIfAborted()
+      if (isMissingPathError(error)) return undefined
+      throw error
+    }
+  },
+
+  async readText(absolutePath, signal) {
+    signal?.throwIfAborted()
+    const content = await readFile(absolutePath, 'utf8')
+    signal?.throwIfAborted()
+    return content
+  },
+
+  async listDir(absolutePath, signal) {
+    signal?.throwIfAborted()
+    try {
+      const entries = await readdir(absolutePath, { withFileTypes: true })
+      signal?.throwIfAborted()
+      return entries.map((entry) => ({
+        name: entry.name,
+        type: entry.isFile() ? 'file' : entry.isDirectory() ? 'directory' : 'other',
+      }))
+    } catch (error) {
+      signal?.throwIfAborted()
+      if (isMissingPathError(error) || isNotDirectoryError(error)) return undefined
+      throw error
+    }
+  },
+}
+
 export function normalizePathForKey(value: string): string {
   return value.replaceAll('\\', '/').replace(/\/{2,}/g, '/')
 }
@@ -58,49 +125,55 @@ export function repositoryDisplayPath(repositoryRoot: string, absolutePath: stri
   return normalizePathForKey(path.relative(path.resolve(repositoryRoot), path.resolve(absolutePath)))
 }
 
-export async function readFileSnapshot(absolutePath: string): Promise<FileSnapshot | undefined> {
-  try {
-    const fileStat = await stat(absolutePath)
-    if (!fileStat.isFile()) return undefined
-    const content = await readFile(absolutePath, 'utf8')
-    return {
-      absolutePath,
-      content,
-      digest: createHash('sha256').update(content).digest('hex'),
-      bytes: Buffer.byteLength(content),
-    }
-  } catch (error) {
-    if (isMissingPathError(error)) return undefined
-    throw error
+export async function readFileSnapshot(
+  absolutePath: string,
+  fileAccess: ReadOnlyFileAccess = nodeReadOnlyFileAccess,
+  signal?: AbortSignal,
+): Promise<FileSnapshot | undefined> {
+  signal?.throwIfAborted()
+  const fileInfo = await fileAccess.stat(absolutePath, signal)
+  if (fileInfo?.type !== 'file') return undefined
+
+  const content = await fileAccess.readText(absolutePath, signal)
+  signal?.throwIfAborted()
+  return {
+    absolutePath,
+    content,
+    digest: createHash('sha256').update(content).digest('hex'),
+    bytes: Buffer.byteLength(content),
   }
 }
 
 export async function firstExistingFile(
   directory: string,
   filenames: readonly string[],
+  fileAccess: ReadOnlyFileAccess = nodeReadOnlyFileAccess,
+  signal?: AbortSignal,
 ): Promise<FileSnapshot | undefined> {
   for (const filename of filenames) {
-    const snapshot = await readFileSnapshot(path.join(directory, filename))
+    signal?.throwIfAborted()
+    const snapshot = await readFileSnapshot(path.join(directory, filename), fileAccess, signal)
     if (snapshot) return snapshot
   }
   return undefined
 }
 
-export async function listMarkdownFilesRecursively(directory: string): Promise<string[]> {
-  let entries
-  try {
-    entries = await readdir(directory, { withFileTypes: true })
-  } catch (error) {
-    if (isMissingPathError(error)) return []
-    throw error
-  }
+export async function listMarkdownFilesRecursively(
+  directory: string,
+  fileAccess: ReadOnlyFileAccess = nodeReadOnlyFileAccess,
+  signal?: AbortSignal,
+): Promise<string[]> {
+  signal?.throwIfAborted()
+  const entries = await fileAccess.listDir(directory, signal)
+  if (entries === undefined) return []
 
   const files: string[] = []
   for (const entry of [...entries].sort((a, b) => a.name.localeCompare(b.name))) {
+    signal?.throwIfAborted()
     const absolutePath = path.join(directory, entry.name)
-    if (entry.isDirectory()) {
-      files.push(...(await listMarkdownFilesRecursively(absolutePath)))
-    } else if (entry.isFile() && entry.name.toLowerCase().endsWith('.md')) {
+    if (entry.type === 'directory') {
+      files.push(...(await listMarkdownFilesRecursively(absolutePath, fileAccess, signal)))
+    } else if (entry.type === 'file' && entry.name.toLowerCase().endsWith('.md')) {
       files.push(absolutePath)
     }
   }
@@ -113,5 +186,14 @@ function isMissingPathError(error: unknown): boolean {
     error !== null &&
     'code' in error &&
     (error as { code?: unknown }).code === 'ENOENT'
+  )
+}
+
+function isNotDirectoryError(error: unknown): boolean {
+  return (
+    typeof error === 'object' &&
+    error !== null &&
+    'code' in error &&
+    (error as { code?: unknown }).code === 'ENOTDIR'
   )
 }
