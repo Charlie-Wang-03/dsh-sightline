@@ -66,6 +66,7 @@ export class ClaudeCodeAdapter implements InstructionAdapter {
           path.join(directory, 'CLAUDE.md'),
           this.#fileAccess,
           input.signal,
+          input.repositoryRoot,
         )
         if (!snapshot) continue
 
@@ -84,12 +85,18 @@ export class ClaudeCodeAdapter implements InstructionAdapter {
         rulesRoot,
         this.#fileAccess,
         input.signal,
+        input.repositoryRoot,
       )
       let deferredPathScopedRules = 0
 
       for (const rulePath of rulePaths) {
         input.signal?.throwIfAborted()
-        const snapshot = await readFileSnapshot(rulePath, this.#fileAccess, input.signal)
+        const snapshot = await readFileSnapshot(
+          rulePath,
+          this.#fileAccess,
+          input.signal,
+          input.repositoryRoot,
+        )
         if (!snapshot) continue
 
         if (hasPathScope(snapshot.content)) {
