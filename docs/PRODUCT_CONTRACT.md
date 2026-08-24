@@ -107,12 +107,12 @@ Core operation is local-first and read-only.
 
 The DSH host has two different presentation boundaries:
 
-1. **Canonical report / Web UI metadata.** The full `SightlineReport` contains the resolved `repositoryRoot`, `cwd`, source identities, evidence states, diagnostics, and optional digests/provenance. It is stored as DSH tool result metadata so the dedicated Web ToolView can render and replay the exact report without recomputing it.
+1. **Canonical report / Web UI metadata.** The full `SightlineReport` contains the resolved `repositoryRoot`, `cwd`, source identities, evidence states, diagnostics, and optional digests/provenance. It is stored as DSH tool result metadata so the dedicated Web ToolView can render and replay the exact report without recomputing it. The ToolView intentionally may display the absolute session `cwd` and full diagnostic messages; anyone who can view that DSH Web session can see those details, subject to DeepSeek Harness Web access controls.
 2. **Model-facing projection.** DSH converts the tool value into text through Sightline's renderer. That projection is handled by the model/provider configured for the current DSH session like other tool output. Sightline does not make an additional network request for it.
 
 For v0.1, the model-facing projection is intentionally narrower than the canonical report: it contains the source comparison, evidence labels, presence states, and diagnostic codes, while omitting absolute `repositoryRoot` / `cwd` values and diagnostic messages that may contain host-path details.
 
-Sightline does not transmit instruction file bodies to a Sightline-owned service. Users remain responsible for the privacy properties of the DSH provider/model they configure and for the normal DSH handling of tool results and session data.
+Sightline does not transmit instruction file bodies to a Sightline-owned service. Users remain responsible for the privacy properties of the DSH provider/model they configure, the normal DSH handling of tool results and session data, and access control for any DSH Web UI they expose.
 
 ## 8. Determinism contract
 
