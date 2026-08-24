@@ -80,6 +80,7 @@ test('client bundle registers a Sightline toolview and renders the canonical rep
 
   assert.match(text, /Sightline/)
   assert.match(text, /Same repo\. Different agents\. Different rules\./)
+  assert.match(text, /cwd: \/repo\/packages\/api/)
   assert.match(text, /DSH: Observed/)
   assert.match(text, /Codex: Predicted/)
   assert.match(text, /Claude: Predicted/)
@@ -89,12 +90,18 @@ test('client bundle registers a Sightline toolview and renders the canonical rep
   assert.match(text, /●/)
   assert.match(text, /—/)
   assert.match(text, /\?/)
+  assert.match(text, /claude-code: claude-path-scoped-rules-deferred — fixture/)
 
   const running = collectText(component({ block: { callId: 'call-1' } })).join(' ')
   assert.match(running, /Comparing workspace instruction surfaces/)
 
   const incompatible = collectText(component({ block: { kind: 'tool-result', meta: null } })).join(' ')
   assert.match(incompatible, /Structured Sightline report unavailable/)
+
+  const malformedDiagnostic = structuredClone(report)
+  malformedDiagnostic.surfaces['claude-code'].diagnostics = [null] as never
+  const malformed = collectText(component({ block: { kind: 'tool-result', meta: malformedDiagnostic } })).join(' ')
+  assert.match(malformed, /Structured Sightline report unavailable/)
 })
 
 async function loadClientRegistration(): Promise<ClientRegistration> {
