@@ -1,6 +1,6 @@
 # v0.1.0 Release Readiness Checklist
 
-This checklist is the release gate for the first public Sightline release. Passing an individual item is evidence for that item only; it is not a certification of the whole project.
+This checklist separates pre-release acceptance from launch execution and post-publication verification. Passing an individual item is evidence for that item only; it is not a certification of the whole project. Sections A-E determine release-candidate readiness; Sections F-H contain optional polish, external launch actions, and post-publication checks.
 
 ## A. Product and truth boundary
 
@@ -28,29 +28,30 @@ This checklist is the release gate for the first public Sightline release. Passi
 - [x] `pnpm-lock.yaml` generated and committed with pnpm 11.7.0.
 - [x] CI installs with `pnpm install --frozen-lockfile`.
 - [x] CI verifies the packed artifact contains required public surfaces and rejects unexpected development/sensitive paths.
-- [ ] Verify the live npm package name `dsh-sightline` is available or choose the final package name.
+- [x] Live npm lookup returned `E404 Not Found` for `dsh-sightline` on 2026-08-24; recheck immediately before first publication because name availability is race-prone.
 
 ## D. Verification
 
 - [x] TypeScript typecheck exists.
-- [x] Automated suite passes **22 / 22** on Linux after the repository-containment hardening; Windows core CI also passes.
+- [x] Automated suite contains **23** tests after repository-containment hardening; the prior Linux CI candidate passed **22 / 22**, and Windows local verification passes **20** tests with the three POSIX file-symlink cases explicitly skipped and a new cross-platform directory-link case covering Windows junction containment. Final CI must exercise all 23 on Linux after the local commit is pushed.
 - [x] Real DSH `ToolRuntime + SessionStore + dsh-fs-local` integration exists.
 - [x] Browser ToolView registration/render smoke exists.
 - [x] Clean-profile CI exists.
 - [x] Human Windows DSH Web smoke has been completed against `0.1.1-rc.2` on the pre-hardening v0.1 package.
 - [x] CI run `32691715922` passes Ubuntu core, Windows core, release dependency audit, packed-artifact validation, and clean-profile installation/export resolution.
-- [ ] Run final Windows local smoke from the final release-candidate artifact.
+- [x] Final Windows engineering checks and isolated-profile installation/export resolution pass from the packed release-candidate artifact.
+- [ ] Complete the final human DSH Web ToolView visual smoke from the exact release-candidate artifact.
 
 ## E. Security and privacy release gate
 
 - [x] Source-backed review identified the repository-symlink containment issue; commit `7f99b314d3c801ccc7f4224dbcd96e6834a35dd7` fixes it and CI covers external-escape rejection plus legitimate internal symlinks.
-- [ ] Run a full Git history secret scan from a local clone; GitHub/API inspection is not an equivalent substitute for scanning every reachable object.
+- [ ] Run a full Git history secret scan from a local clone at the final local release-candidate commit; GitHub/API inspection is not an equivalent substitute for scanning every reachable object.
 - [x] Audit commit author/committer metadata for the complete history reachable from `main` plus the current release-readiness branch: maintainer-authored commits use `133667618+Charlie-Wang-03@users.noreply.github.com`, and GitHub-created commits use `noreply@github.com`.
-- [ ] Delete the six stale merged development branches before public visibility: `chore/enable-manual-ci`, `chore/v0.1-contract-skeleton`, `feat/core-resolution-engine`, `feat/dsh-host-tool`, `feat/dsh-observed-adapter`, and `feat/v0.1-productization`. PRs #1–#6 are all confirmed merged; these refs no longer serve active development.
+- [x] After `git fetch --prune origin` on 2026-08-24, the stale merged development refs are absent; only `origin/main`, `origin/release/v0.1.0-readiness`, and `origin/HEAD` remain.
 - [x] Dependency vulnerability review: CI run `32691715922` executes `pnpm audit --audit-level=high` from the frozen lockfile with project scripts disabled and reports **No known vulnerabilities found**.
 - [x] Dependency license review: the same CI run inventories installed dependency licenses; the only license families reported are **MIT** and **Apache-2.0**, with no unexpected incompatible, proprietary, copyleft, or unknown license bucket.
 - [x] CI rejects unexpected development/sensitive paths in the packed artifact; final human tarball inspection remains part of the release-candidate smoke.
-- [ ] Re-run the source-backed security review on the final release diff / commit after all manual evidence is incorporated.
+- [x] Source-backed security review completed for the release runtime/package diff with no reportable findings; the final local follow-up is limited to tests and release-document truthfulness.
 
 ## F. Public launch surface
 
@@ -60,7 +61,7 @@ This checklist is the release gate for the first public Sightline release. Passi
 - [ ] Configure GitHub repository Description and Topics after public release preparation is complete.
 - [ ] Configure a social preview image if one is available and publication-safe.
 
-## G. npm publishing
+## G. Launch execution — npm publishing
 
 - [ ] Confirm npm account access and package-name availability.
 - [ ] Decide and configure the first-publish authentication path.
@@ -69,7 +70,7 @@ This checklist is the release gate for the first public Sightline release. Passi
 - [ ] Verify `npm view dsh-sightline@0.1.0` metadata and package contents after publication.
 - [ ] Verify a clean DSH profile can install from npm, not from the repository checkout.
 
-## H. GitHub public release
+## H. Launch execution and post-publication verification — GitHub
 
 - [ ] Merge the release-readiness PR only after automated and manual gates pass.
 - [ ] Remove the six stale merged development branches listed above.
@@ -83,7 +84,7 @@ This checklist is the release gate for the first public Sightline release. Passi
 
 ## Release decision
 
-The repository is **NO-GO for public release** while any of the following remain unresolved:
+The release candidate is **NO-GO** while any of the following remain unresolved:
 
 - license missing or inconsistent;
 - privacy contract inconsistent with actual model-facing behavior;
@@ -92,6 +93,6 @@ The repository is **NO-GO for public release** while any of the following remain
 - full-history secret audit incomplete;
 - stale merged development branches remain and would expose branch-only history;
 - final release candidate CI or smoke failing;
-- npm package identity / publication not verified.
+- live npm package-name lookup reports a conflict.
 
-Once those blockers are closed, remaining launch-polish items may be evaluated as proportional trade-offs rather than automatic blockers.
+When Sections A-E pass except for explicitly identified manual or external gates, the correct pre-release verdict is **CONDITIONAL GO**, not a circular failure caused by work that can only happen after approval. npm account authentication, Trusted Publishing configuration, publication itself, public-repository settings, tags, releases, and post-publication verification belong to the launch sequence in Sections G-H. Optional launch-polish items in Section F are proportional trade-offs rather than automatic blockers.

@@ -98,6 +98,43 @@ test('DSH hosted prediction preserves repository symlinks whose canonical target
   }
 })
 
+test('DSH hosted prediction rejects an external Claude rules directory link', async () => {
+  const root = await mkdtemp(path.join(os.tmpdir(), 'sightline-containment-directory-link-'))
+  try {
+    const repositoryRoot = path.join(root, 'repo')
+    const codexHome = path.join(root, 'codex-home')
+    const claudeHome = path.join(root, 'claude-home')
+    const externalRules = path.join(root, 'outside-claude-rules')
+    await mkdir(path.join(repositoryRoot, '.git'), { recursive: true })
+    await mkdir(path.join(repositoryRoot, '.claude'), { recursive: true })
+    await mkdir(codexHome, { recursive: true })
+    await mkdir(claudeHome, { recursive: true })
+    await mkdir(externalRules, { recursive: true })
+    await writeFile(path.join(externalRules, 'escape.md'), 'outside repository instructions', 'utf8')
+    await symlink(
+      externalRules,
+      path.join(repositoryRoot, '.claude', 'rules'),
+      process.platform === 'win32' ? 'junction' : 'dir',
+    )
+
+    const ctx = await setupSightline({ codexHome, claudeHome })
+    const report = await executeSightline(ctx, repositoryRoot, 'containment-directory-link')
+
+    assert.equal(report.surfaces['claude-code'].evidence, 'unavailable')
+    assert.equal(report.surfaces['claude-code'].sources.length, 0)
+    assert.equal(
+      report.surfaces['claude-code'].diagnostics[0]?.code,
+      'claude-resolution-failed',
+    )
+    assert.match(
+      report.surfaces['claude-code'].diagnostics[0]?.message ?? '',
+      /outside the repository containment root/,
+    )
+  } finally {
+    await rm(root, { recursive: true, force: true })
+  }
+})
+
 async function setupSightline(options: sightlinePlugin.SightlineToolOptions): Promise<Context> {
   const ctx = new Context()
   await ctx.plugin(SystemPrompt)

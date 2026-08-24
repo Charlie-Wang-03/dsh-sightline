@@ -21,7 +21,7 @@ The intended v0.1 public distribution channel is a **prebuilt npm package**:
 dsh plugin --profile web add dsh-sightline@0.1.0
 ```
 
-This avoids asking normal users to approve Sightline's own build script at install time. The npm package must contain already-built Host artifacts, the browser client bundle, the DSH bundle patch, README, packaging notes, and MIT license.
+This avoids asking normal users to approve Sightline's own build script at install time. The npm package must contain already-built Host artifacts, the browser client bundle, the DSH bundle patch, both README entry points, packaging notes, and MIT license.
 
 The package name and first npm publication remain release gates until they are verified against the live npm registry and the maintainer account.
 
@@ -46,6 +46,7 @@ Inspect the tarball before publication. The intended package surface is delibera
 package.json
 LICENSE
 README.md
+README.zh-CN.md
 client.js
 cordis.patch.yml
 docs/PACKAGING.md

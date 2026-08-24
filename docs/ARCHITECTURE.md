@@ -255,9 +255,9 @@ See [`DSH_HOST_TOOL.md`](DSH_HOST_TOOL.md) for the seam evidence and first three
 
 The DSH `sightline` tool returns the canonical report as its structured JSON value and renders a compact source-by-agent matrix for the model.
 
-### Web panel — pending
+### Web panel — implemented
 
-The first UI should be deliberately small:
+The browser client registers a keyed `tool.call.toolview` for the `sightline` wire tool. It consumes the canonical report replayed through `presentationMeta`, rather than parsing model-facing Markdown or running another comparison path. The deliberately small UI shows:
 
 - target `cwd`;
 - three agent columns;
@@ -278,6 +278,10 @@ Current repository shape:
 dsh-sightline/
 ├── AGENTS.md
 ├── README.md
+├── README.zh-CN.md
+├── LICENSE
+├── client.js
+├── cordis.patch.yml
 ├── package.json
 ├── tsconfig.json
 ├── docs/
@@ -306,7 +310,7 @@ dsh-sightline/
     └── dsh-public-session.compat.ts
 ```
 
-The installable `dsh.bundle` manifest, `cordis.patch.yml`, build/prepare packaging path, and clean-profile installation smoke are intentionally not claimed by this milestone. `src/client/` should not be created until the compact panel begins.
+The package declares the supported `dsh.bundle` and `dsh.client` fields, ships a prebuilt Host distribution and browser client, and is verified through packed-artifact and isolated-profile installation checks. The browser entry point remains a small root-level `client.js`; it does not duplicate comparison logic under `src/client/`.
 
 ## 14. Dependency policy
 
@@ -331,7 +335,9 @@ Current verified layers:
 2. fixture-driven tests for Codex and Claude discovery semantics using the default Node read-only adapter;
 3. focused DSH provenance integration tests over the documented durable event/source shape;
 4. compile-time compatibility against published `@deepseek-ai/dsh-session@0.1.1-rc.2`;
-5. real Cordis + published DSH `SystemPrompt` + `ToolRuntime` + `SessionStore` + `LocalFileSystem` host integration, mounting Sightline through `ctx.plugin(...)` and invoking the registered tool through `ctx.tools.execute(...)` against a real DSH Session.
+5. real Cordis + published DSH `SystemPrompt` + `ToolRuntime` + `SessionStore` + `LocalFileSystem` host integration, mounting Sightline through `ctx.plugin(...)` and invoking the registered tool through `ctx.tools.execute(...)` against a real DSH Session;
+6. packed-plugin install and export-resolution smoke in an isolated DSH profile;
+7. browser ToolView registration/render smoke over the canonical replayed report.
 
 The host integration fixture deliberately demonstrates:
 
@@ -344,10 +350,7 @@ The host integration fixture deliberately demonstrates:
 - caller cancellation before filesystem work;
 - total rendering for incompatible replayed generic JSON.
 
-Remaining v0.1 integration layers:
-
-6. packed-plugin install smoke in a clean DSH profile;
-7. one visual/snapshot smoke for the compact panel if the current DSH client testing surface supports it.
+The release checklist separately tracks the final human DSH Web visual smoke; automated rendering coverage is not represented as human visual evidence.
 
 A passing static resolver test must never be used as proof of DSH runtime observation.
 
