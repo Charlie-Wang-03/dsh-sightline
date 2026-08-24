@@ -43,6 +43,8 @@ export interface EffectiveInstructionSurface {
 export interface ResolveInput {
   repositoryRoot: string
   cwd: string
+  /** Optional caller cancellation propagated through resolver I/O. */
+  signal?: AbortSignal
 }
 
 export interface InstructionAdapter {

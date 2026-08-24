@@ -5,6 +5,7 @@ import path from 'node:path'
 import test from 'node:test'
 import { Context } from '@deepseek-ai/cordis'
 import type { Agent } from '@deepseek-ai/dsh-agent'
+import LocalFileSystem from '@deepseek-ai/dsh-fs-local'
 import { CallId, createUserMessage } from '@deepseek-ai/dsh-llm'
 import SessionStore, { SessionId } from '@deepseek-ai/dsh-session'
 import SystemPrompt from '@deepseek-ai/dsh-system-prompt'
@@ -16,7 +17,7 @@ import * as sightlinePlugin from '../src/host/dsh-tool.js'
 
 const TEST_SIGNAL = new AbortController().signal
 
-test('real DSH ToolRuntime produces the first three-column Sightline report', async () => {
+test('real DSH ToolRuntime and ctx.fs produce the first three-column Sightline report', async () => {
   const root = await mkdtemp(path.join(os.tmpdir(), 'dsh-sightline-host-'))
   try {
     const repositoryRoot = path.join(root, 'repo')
@@ -35,6 +36,8 @@ test('real DSH ToolRuntime produces the first three-column Sightline report', as
     await put(repositoryRoot, '.claude/rules/always.md', 'Claude-only always-loaded rule.')
 
     const ctx = await setupSightline({ codexHome, claudeHome })
+    assert.ok(ctx.fs instanceof LocalFileSystem)
+
     const session = ctx.sessions.create(SessionId('sightline-three-column'), { meta: { cwd } })
     appendInstructionBaseline(session, [
       { action: 'set', scope: '.\u0000AGENTS.md', path: 'AGENTS.md', digest: 'dsh-root-agents' },
@@ -149,6 +152,7 @@ async function setupSightline(options: sightlinePlugin.SightlineToolOptions): Pr
   await ctx.plugin(SystemPrompt)
   await ctx.plugin(ToolRuntime)
   await ctx.plugin(SessionStore)
+  await ctx.plugin(LocalFileSystem, { cwd: process.cwd() })
   await ctx.plugin(sightlinePlugin, options)
   return ctx
 }

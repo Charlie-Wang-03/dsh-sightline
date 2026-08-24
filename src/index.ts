@@ -13,9 +13,15 @@ export { AGENT_ORDER, compareInstructionSurfaces } from './compare.js'
 export {
   directoryChain,
   isWithinRepository,
+  nodeReadOnlyFileAccess,
   normalizePathForKey,
   repositoryDisplayPath,
   repositorySourceKey,
+} from './filesystem.js'
+export type {
+  ReadOnlyDirectoryEntry,
+  ReadOnlyFileAccess,
+  ReadOnlyFileInfo,
 } from './filesystem.js'
 export {
   apply as applyDshSightlineTool,

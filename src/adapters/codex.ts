@@ -11,9 +11,11 @@ import type {
 import {
   directoryChain,
   firstExistingFile,
+  nodeReadOnlyFileAccess,
   repositoryDisplayPath,
   repositorySourceKey,
 } from '../filesystem.js'
+import type { ReadOnlyFileAccess } from '../filesystem.js'
 
 const DEFAULT_PROJECT_BUDGET = 32 * 1024
 const DEFAULT_CANDIDATES = ['AGENTS.override.md', 'AGENTS.md'] as const
@@ -23,6 +25,7 @@ export interface CodexAdapterOptions {
   fallbackFilenames?: readonly string[]
   maxProjectBytes?: number
   resolverVersion?: string
+  fileAccess?: ReadOnlyFileAccess
 }
 
 export class CodexAdapter implements InstructionAdapter {
@@ -32,21 +35,29 @@ export class CodexAdapter implements InstructionAdapter {
   readonly #fallbackFilenames: readonly string[]
   readonly #maxProjectBytes: number
   readonly #resolverVersion: string
+  readonly #fileAccess: ReadOnlyFileAccess
 
   constructor(options: CodexAdapterOptions = {}) {
     this.#codexHome = options.codexHome ?? process.env.CODEX_HOME ?? path.join(os.homedir(), '.codex')
     this.#fallbackFilenames = dedupe(options.fallbackFilenames ?? [])
     this.#maxProjectBytes = options.maxProjectBytes ?? DEFAULT_PROJECT_BUDGET
     this.#resolverVersion = options.resolverVersion ?? 'codex-docs-2026-08-23'
+    this.#fileAccess = options.fileAccess ?? nodeReadOnlyFileAccess
   }
 
   async resolve(input: ResolveInput): Promise<EffectiveInstructionSurface> {
     try {
+      input.signal?.throwIfAborted()
       const sources: InstructionSource[] = []
       const diagnostics: SurfaceDiagnostic[] = []
       let order = 0
 
-      const global = await firstExistingFile(this.#codexHome, DEFAULT_CANDIDATES)
+      const global = await firstExistingFile(
+        this.#codexHome,
+        DEFAULT_CANDIDATES,
+        this.#fileAccess,
+        input.signal,
+      )
       if (global) {
         sources.push({
           sourceKey: `global:codex:${path.basename(global.absolutePath)}`,
@@ -65,6 +76,7 @@ export class CodexAdapter implements InstructionAdapter {
       let remainingBytes = this.#maxProjectBytes
 
       for (const directory of directoryChain(input.repositoryRoot, input.cwd)) {
+        input.signal?.throwIfAborted()
         if (remainingBytes <= 0) {
           diagnostics.push({
             code: 'codex-project-instruction-budget-exhausted',
@@ -73,7 +85,12 @@ export class CodexAdapter implements InstructionAdapter {
           break
         }
 
-        const selected = await firstExistingFile(directory, candidates)
+        const selected = await firstExistingFile(
+          directory,
+          candidates,
+          this.#fileAccess,
+          input.signal,
+        )
         if (!selected) continue
 
         const bytesIncluded = Math.min(remainingBytes, selected.bytes)
@@ -113,6 +130,7 @@ export class CodexAdapter implements InstructionAdapter {
         diagnostics,
       }
     } catch (error) {
+      input.signal?.throwIfAborted()
       return unavailableSurface(input, this.#resolverVersion, error)
     }
   }

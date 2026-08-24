@@ -1,16 +1,18 @@
 import type { Context } from '@deepseek-ai/cordis'
 import { defineTool } from '@deepseek-ai/dsh-tools'
-import { stat } from 'node:fs/promises'
 import path from 'node:path'
 
 import { ClaudeCodeAdapter } from '../adapters/claude-code.js'
 import { CodexAdapter } from '../adapters/codex.js'
 import { DshObservedAdapter } from '../adapters/dsh.js'
 import type { SightlineReport } from '../contracts.js'
+import { nodeReadOnlyFileAccess } from '../filesystem.js'
+import type { ReadOnlyFileAccess } from '../filesystem.js'
 import { buildSightlineReport } from '../report.js'
+import { createDshReadOnlyFileAccess } from './dsh-file-access.js'
 
 export const name = 'dsh-sightline'
-export const inject = ['tools']
+export const inject = ['tools', 'fs']
 
 export interface SightlineToolOptions {
   codexHome?: string
@@ -25,16 +27,19 @@ const INCOMPATIBLE_OUTPUT_MESSAGE =
 /**
  * Register the first model-facing Sightline surface in DSH.
  *
- * The tool is intentionally argument-free in v0.1: it reports the exact live
- * agent session that invoked it, preventing a model from claiming runtime
- * observation for an unrelated session or cwd.
+ * DSH host registration always binds static discovery to the public `ctx.fs`
+ * capability. Standalone resolver/tool construction may still use the default
+ * Node filesystem implementation outside Harness.
  */
 export function apply(ctx: Context, options: SightlineToolOptions = {}): void {
-  ctx.tools.register(createSightlineTool(options))
+  ctx.tools.register(createSightlineTool(options, createDshReadOnlyFileAccess(ctx.fs)))
 }
 
-/** Exported for focused host integration tests and future bundle wiring. */
-export function createSightlineTool(options: SightlineToolOptions = {}) {
+/** Exported for focused host integration tests and standalone embedding. */
+export function createSightlineTool(
+  options: SightlineToolOptions = {},
+  fileAccess: ReadOnlyFileAccess = nodeReadOnlyFileAccess,
+) {
   return defineTool({
     name: 'sightline',
     description:
@@ -66,18 +71,23 @@ export function createSightlineTool(options: SightlineToolOptions = {}) {
         cwd,
         options.projectRootMarkers ?? DEFAULT_PROJECT_ROOT_MARKERS,
         exec.signal,
+        fileAccess,
       )
       exec.signal.throwIfAborted()
 
       const report = await buildSightlineReport(
         [
           new DshObservedAdapter({ getSession: () => exec.agent?.session }),
-          new CodexAdapter({ ...(options.codexHome === undefined ? {} : { codexHome: options.codexHome }) }),
+          new CodexAdapter({
+            ...(options.codexHome === undefined ? {} : { codexHome: options.codexHome }),
+            fileAccess,
+          }),
           new ClaudeCodeAdapter({
             ...(options.claudeHome === undefined ? {} : { claudeHome: options.claudeHome }),
+            fileAccess,
           }),
         ],
-        { repositoryRoot, cwd },
+        { repositoryRoot, cwd, signal: exec.signal },
       )
       exec.signal.throwIfAborted()
 
@@ -92,12 +102,14 @@ export function createSightlineTool(options: SightlineToolOptions = {}) {
 /**
  * Match DSH's default project-root behavior without importing an internal
  * instruction-discovery implementation: walk upward to the first marker and
- * fall back to cwd when none exists.
+ * fall back to cwd when none exists. The caller supplies the filesystem
+ * execution world; standalone callers default to Node while DSH supplies ctx.fs.
  */
 export async function findRepositoryRoot(
   cwd: string,
   markers: readonly string[] = DEFAULT_PROJECT_ROOT_MARKERS,
   signal?: AbortSignal,
+  fileAccess: ReadOnlyFileAccess = nodeReadOnlyFileAccess,
 ): Promise<string> {
   const resolvedCwd = path.resolve(cwd)
   let current = resolvedCwd
@@ -105,7 +117,8 @@ export async function findRepositoryRoot(
   for (;;) {
     signal?.throwIfAborted()
     for (const marker of markers) {
-      if (await pathExists(path.join(current, marker), signal)) return current
+      const info = await fileAccess.stat(path.join(current, marker), signal)
+      if (info !== undefined) return current
     }
 
     const parent = path.dirname(current)
@@ -217,26 +230,6 @@ function presenceMark(value: 'present' | 'absent' | 'unknown' | undefined): stri
 
 function escapeTableCell(value: string): string {
   return value.replaceAll('|', '\\|').replaceAll('\n', ' ')
-}
-
-async function pathExists(target: string, signal?: AbortSignal): Promise<boolean> {
-  signal?.throwIfAborted()
-  try {
-    await stat(target)
-    signal?.throwIfAborted()
-    return true
-  } catch (error) {
-    signal?.throwIfAborted()
-    if (
-      typeof error === 'object' &&
-      error !== null &&
-      'code' in error &&
-      ((error as { code?: unknown }).code === 'ENOENT' || (error as { code?: unknown }).code === 'ENOTDIR')
-    ) {
-      return false
-    }
-    throw error
-  }
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
