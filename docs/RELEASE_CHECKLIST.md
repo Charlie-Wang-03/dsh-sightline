@@ -8,7 +8,7 @@ This checklist is the release gate for the first public Sightline release. Passi
 - [x] DSH `Observed`, Codex / Claude `Predicted`, and `Unavailable` remain distinct truth states.
 - [x] Core operation is read-only and local-first.
 - [x] Privacy wording distinguishes the full canonical report from the model-facing projection.
-- [ ] Model-facing renderer omits absolute workspace paths and full diagnostic messages by default.
+- [x] Model-facing renderer omits absolute workspace paths and full diagnostic messages by default; regression-covered in CI.
 
 ## B. Legal and community
 
@@ -23,22 +23,22 @@ This checklist is the release gate for the first public Sightline release. Passi
 - [x] npm prebuilt package selected as the primary public installation path.
 - [x] package manifest is publishable and uses `publishConfig.access: public`.
 - [x] installable DSH bundle and Web client exports are implemented.
-- [x] clean-profile packed-artifact installation has passed previously.
+- [x] clean-profile packed-artifact installation has passed.
 - [ ] Commit a current `pnpm-lock.yaml` generated with pnpm 11.7.0.
 - [ ] Change CI installs to `pnpm install --frozen-lockfile`.
-- [ ] Verify `pnpm pack` contains only the intended public package surface.
+- [x] CI verifies the packed artifact contains required public surfaces and rejects unexpected development/sensitive paths.
 - [ ] Verify the live npm package name `dsh-sightline` is available or choose the final package name.
 
 ## D. Verification
 
 - [x] TypeScript typecheck exists.
-- [x] Automated test suite exists and previously passed 18 / 18.
+- [x] Automated suite passes **19 / 19** on the release-readiness branch.
 - [x] Real DSH `ToolRuntime + SessionStore + dsh-fs-local` integration exists.
 - [x] Browser ToolView registration/render smoke exists.
 - [x] Clean-profile CI exists.
-- [x] Human Windows DSH Web smoke has been completed against `0.1.1-rc.2`.
-- [ ] Run the release-readiness branch CI after all hardening changes.
-- [ ] Run final Windows local smoke from the release candidate artifact.
+- [x] Human Windows DSH Web smoke has been completed against `0.1.1-rc.2` on the pre-hardening v0.1 package.
+- [x] Release-readiness CI run `32688134342` passes on Ubuntu, Windows, and clean-profile packed installation.
+- [ ] Run final Windows local smoke from the final release-candidate artifact after the lockfile/frozen-install change.
 
 ## E. Security and privacy release gate
 
@@ -46,8 +46,8 @@ This checklist is the release gate for the first public Sightline release. Passi
 - [ ] Review commit author metadata for unintended personal email / PII exposure.
 - [ ] Run dependency vulnerability review (`pnpm audit` or equivalent) and triage findings rather than blindly suppressing them.
 - [ ] Review package licenses for unexpected incompatible dependencies.
-- [ ] Inspect the final tarball for credentials, private paths, local artifacts, and unnecessary files.
-- [ ] Re-run the source-backed security review on the final release diff / commit.
+- [x] CI rejects unexpected development/sensitive paths in the packed artifact; final human tarball inspection remains part of the release-candidate smoke.
+- [ ] Re-run the source-backed security review on the final release diff / commit after all manual evidence is incorporated.
 
 ## F. Public launch surface
 
