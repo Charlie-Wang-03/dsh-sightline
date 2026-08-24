@@ -30,13 +30,13 @@ jobs:
 
   clean-profile:
     runs-on: ubuntu-latest
-    env:
-      DSH_HOME: ${{ runner.temp }}/dsh-sightline-home
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: 24.19.0
+      - name: Configure isolated DSH home
+        run: echo "DSH_HOME=$RUNNER_TEMP/dsh-sightline-home" >> "$GITHUB_ENV"
       - name: Enable pinned pnpm
         run: |
           corepack enable
