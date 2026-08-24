@@ -45,7 +45,7 @@ This checklist separates pre-release acceptance from launch execution and post-p
 ## E. Security and privacy release gate
 
 - [x] Source-backed review identified the repository-symlink containment issue; commit `7f99b314d3c801ccc7f4224dbcd96e6834a35dd7` fixes it and CI covers external-escape rejection plus legitimate internal symlinks.
-- [ ] Run a full Git history secret scan from a local clone at the final local release-candidate commit; GitHub/API inspection is not an equivalent substitute for scanning every reachable object.
+- [x] Gitleaks 8.30.1 scanned the full history reachable from all local refs at the final local release-candidate commit with redacted output and reported **no leaks found**.
 - [x] Audit commit author/committer metadata for the complete history reachable from `main` plus the current release-readiness branch: maintainer-authored commits use `133667618+Charlie-Wang-03@users.noreply.github.com`, and GitHub-created commits use `noreply@github.com`.
 - [x] After `git fetch --prune origin` on 2026-08-24, the stale merged development refs are absent; only `origin/main`, `origin/release/v0.1.0-readiness`, and `origin/HEAD` remain.
 - [x] Dependency vulnerability review: CI run `32691715922` executes `pnpm audit --audit-level=high` from the frozen lockfile with project scripts disabled and reports **No known vulnerabilities found**.
