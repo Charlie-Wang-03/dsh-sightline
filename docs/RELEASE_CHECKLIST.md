@@ -73,7 +73,7 @@ This checklist separates pre-release acceptance from launch execution and post-p
 ## H. Launch execution and post-publication verification — GitHub
 
 - [ ] Merge the release-readiness PR only after automated and manual gates pass.
-- [ ] Remove the six stale merged development branches listed above.
+- [x] Confirm the six stale merged development branches listed above remain absent immediately before the public visibility change.
 - [ ] Make the repository public.
 - [ ] Enable appropriate default-branch protection.
 - [ ] Enable private vulnerability reporting.
