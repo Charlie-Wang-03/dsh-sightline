@@ -32,6 +32,24 @@ jobs:
       - name: Check implementation
         run: pnpm run check
 
+  release-audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24.19.0
+      - name: Enable pinned pnpm
+        run: |
+          corepack enable
+          corepack prepare pnpm@11.7.0 --activate
+      - name: Install dependencies without project scripts
+        run: pnpm install --frozen-lockfile --ignore-scripts
+      - name: Audit dependency vulnerabilities
+        run: pnpm audit --audit-level=high
+      - name: Inventory dependency licenses
+        run: pnpm licenses list --json
+
   clean-profile:
     runs-on: ubuntu-latest
     steps:
