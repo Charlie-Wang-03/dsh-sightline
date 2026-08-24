@@ -118,7 +118,7 @@ Sightline 是 local-first、read-only 工具，但 **local-first 并不意味着
 
 - Sightline 自身不会调用任何 Sightline 自有的远程服务；
 - Sightline 不会修改工作区指令文件；
-- 完整 canonical report 会作为 DSH Tool metadata 保留，供本地 Web ToolView 与 replay 使用，其中包含 `repositoryRoot` / `cwd` 等工作区身份信息；
+- 完整 canonical report 会作为 DSH Tool metadata 保留，供 Web ToolView 与 replay 使用，其中包含 `repositoryRoot` / `cwd` 等工作区身份信息；ToolView 可能显示绝对 Session `cwd` 与完整 diagnostic message。任何能够访问该 DSH Web Session 的人都可能看到这些信息，其访问控制由 DSH Web 自身负责；
 - **发送给模型的文本投影更窄**：默认只包含 source identity、evidence label、presence state 与 diagnostic code，并省略绝对工作区路径和完整 diagnostic message；
 - 这部分 model-facing output 与其他 DSH Tool output 一样，由当前 Session 配置的模型 / Provider 处理；
 - Sightline 不会把指令文件正文上传到 Sightline 自有服务。
