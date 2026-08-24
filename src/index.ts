@@ -24,11 +24,14 @@ export type {
   ReadOnlyFileInfo,
 } from './filesystem.js'
 export {
+  apply,
   apply as applyDshSightlineTool,
   createSightlineTool,
   findRepositoryRoot,
   formatSightlineReportMarkdown,
+  inject,
   inject as dshSightlineInject,
+  name,
   name as dshSightlinePluginName,
 } from './host/dsh-tool.js'
 export type { SightlineToolOptions } from './host/dsh-tool.js'

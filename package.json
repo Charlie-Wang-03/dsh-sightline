@@ -1,6 +1,6 @@
 {
   "name": "dsh-sightline",
-  "version": "0.0.0-private",
+  "version": "0.1.0",
   "private": true,
   "description": "Compare the effective instruction surfaces of DeepSeek Harness, Codex, and Claude Code.",
   "type": "module",
@@ -8,11 +8,30 @@
   "engines": {
     "node": "^22.19.0 || >=24.0.0"
   },
+  "main": "dist/src/index.js",
+  "types": "dist/src/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/src/index.d.ts",
+      "default": "./dist/src/index.js"
+    },
+    "./client": "./client.js",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "dist/src",
+    "client.js",
+    "cordis.patch.yml",
+    "README.md",
+    "docs/PACKAGING.md"
+  ],
   "scripts": {
     "build": "tsc -p tsconfig.json",
+    "build:host": "tsc -p tsconfig.json",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "pnpm run build && node --test dist/tests/*.test.js",
-    "check": "pnpm run typecheck && pnpm run test"
+    "check": "pnpm run typecheck && pnpm run test",
+    "prepare": "pnpm run build:host"
   },
   "peerDependencies": {
     "@deepseek-ai/cordis": "4.0.1",
@@ -30,5 +49,16 @@
     "@deepseek-ai/dsh-tools": "0.1.1-rc.2",
     "@types/node": "22.20.0",
     "typescript": "6.0.3"
+  },
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    },
+    "client": {
+      "platform": "web",
+      "inject": [
+        "@deepseek-ai/dsh-client-ui-tool"
+      ]
+    }
   }
 }
