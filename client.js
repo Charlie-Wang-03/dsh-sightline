@@ -69,7 +69,9 @@
             })
 
         const diagnostics = Object.values(report.surfaces)
-          .flatMap((surface) => surface.diagnostics.map((item) => `${surface.agent}: ${item.code}`))
+          .flatMap((surface) => surface.diagnostics.map(
+            (item) => `${surface.agent}: ${item.code} — ${item.message}`,
+          ))
 
         return h(
           'div',
@@ -80,6 +82,7 @@
             h('div', null,
               h('div', { style: titleStyle }, 'Sightline'),
               h('div', { style: mutedStyle }, 'Same repo. Different agents. Different rules.'),
+              h('div', { style: cwdStyle, title: report.cwd }, `cwd: ${report.cwd}`),
             ),
             h(
               'div',
@@ -125,12 +128,15 @@
       }
 
       function parseReport(value) {
-        if (!isRecord(value) || value.schemaVersion !== 1) return undefined
+        if (!isRecord(value) || value.schemaVersion !== 1 || typeof value.cwd !== 'string') return undefined
         if (!isRecord(value.surfaces) || !Array.isArray(value.divergences)) return undefined
         for (const agent of ['dsh', 'codex', 'claude-code']) {
           const surface = value.surfaces[agent]
           if (!isRecord(surface) || surface.agent !== agent || !isEvidence(surface.evidence)) return undefined
           if (!Array.isArray(surface.diagnostics)) return undefined
+          if (!surface.diagnostics.every((item) =>
+            isRecord(item) && typeof item.code === 'string' && typeof item.message === 'string'
+          )) return undefined
         }
         for (const row of value.divergences) {
           if (!isRecord(row) || typeof row.sourceKey !== 'string' || typeof row.displayPath !== 'string') return undefined
@@ -187,6 +193,7 @@
   const headerStyle = { display: 'flex', gap: '12px', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap' }
   const titleStyle = { fontSize: '14px', fontWeight: 650, lineHeight: 1.3 }
   const mutedStyle = { fontSize: '12px', opacity: .68, marginTop: '2px' }
+  const cwdStyle = { fontSize: '11px', opacity: .72, marginTop: '5px', fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Consolas, monospace', overflowWrap: 'anywhere' }
   const evidenceRowStyle = { display: 'flex', gap: '6px', flexWrap: 'wrap', justifyContent: 'flex-end' }
   const badgeStyle = { fontSize: '11px', border: '1px solid rgba(127,127,127,.28)', borderRadius: '999px', padding: '2px 7px', whiteSpace: 'nowrap' }
   const tableWrapStyle = { overflowX: 'auto', marginTop: '10px' }
