@@ -34,7 +34,7 @@ This checklist separates pre-release acceptance from launch execution and post-p
 ## D. Verification
 
 - [x] TypeScript typecheck exists.
-- [x] Automated suite contains **23** tests after repository-containment hardening; the prior Linux CI candidate passed **22 / 22**, and Windows local verification passes **20** tests with the three POSIX file-symlink cases explicitly skipped and a new cross-platform directory-link case covering Windows junction containment. Final CI must exercise all 23 on Linux after the local commit is pushed.
+- [x] Automated suite contains **23** tests after repository-containment hardening. Final PR CI runs `32704836493` and `32704994326` pass Ubuntu and Windows core; the Ubuntu run executes **23 / 23 PASS** with 0 skipped, while Windows passes all applicable tests including the cross-platform directory-link case for junction containment.
 - [x] Real DSH `ToolRuntime + SessionStore + dsh-fs-local` integration exists.
 - [x] Browser ToolView registration/render smoke exists.
 - [x] Clean-profile CI exists.
@@ -42,17 +42,18 @@ This checklist separates pre-release acceptance from launch execution and post-p
 - [x] CI run `32691715922` passes Ubuntu core, Windows core, release dependency audit, packed-artifact validation, and clean-profile installation/export resolution.
 - [x] Final Windows engineering checks and isolated-profile installation/export resolution pass from the packed release-candidate artifact.
 - [x] Final exact-artifact DSH Web smoke passed on 2026-08-24 with `dsh@0.1.1-rc.2` and tarball SHA-256 `aca658c5a8e3aa7cbb1ffce44a20c617d678004676e0478c3fe14feee5a399a1`: real authenticated sessions invoked `sightline`; Web replay rendered the three agent columns, `Observed` / `Predicted` / `Unavailable`, Present / Absent / Unknown, target `cwd`, and diagnostics. The model-facing result omitted absolute workspace paths and full diagnostic messages, while the fuller ToolView retained them as documented.
+- [x] After PR #7 merged to `main` at `5cd815513669b8054fad6f995794735ca287269f`, the merge-to-main CI was manually confirmed green across Ubuntu core, Windows core, release-audit, and clean-profile.
 
 ## E. Security and privacy release gate
 
 - [x] Source-backed review identified the repository-symlink containment issue; commit `7f99b314d3c801ccc7f4224dbcd96e6834a35dd7` fixes it and CI covers external-escape rejection plus legitimate internal symlinks.
-- [x] Gitleaks 8.30.1 evidence is retained at both scopes: the pre-prune full-ref scan covered **64 commits** with no leaks and exit 0; after stale remote refs were pruned, the reachable-ref scan covered **26 commits** with no leaks. The count differs because the six stale remote branch refs were removed; rerun the reachable-ref scan after every final evidence commit before handoff.
-- [x] Audit commit author/committer metadata for the complete history reachable from `main` plus the current release-readiness branch: maintainer-authored commits use `133667618+Charlie-Wang-03@users.noreply.github.com`, and GitHub-created commits use `noreply@github.com`.
-- [x] After `git fetch --prune origin` on 2026-08-24, the stale merged development refs are absent; only `origin/main`, `origin/release/v0.1.0-readiness`, and `origin/HEAD` remain.
+- [x] Gitleaks 8.30.1 evidence is retained at both scopes: the pre-prune full-ref scan covered **64 commits** with no leaks and exit 0; after stale remote refs were pruned, the reachable-ref scan covered **26 commits** with no leaks. The count differs because the six stale remote branch refs were removed; the final closure head was scanned again with **27 commits** and no leaks, and the working tree scan also found no leaks.
+- [x] Commit author/committer metadata for the release-candidate history was audited: maintainer-authored commits use `133667618+Charlie-Wang-03@users.noreply.github.com`, and GitHub-created commits use `noreply@github.com`.
+- [x] The six merged development branches were removed before public visibility. After PR #7 merged and the release-readiness branch was deleted, GitHub and the local clone both show only `main` / `origin/main` as the remaining branch.
 - [x] Dependency vulnerability review: CI run `32691715922` executes `pnpm audit --audit-level=high` from the frozen lockfile with project scripts disabled and reports **No known vulnerabilities found**.
 - [x] Dependency license review: the same CI run inventories installed dependency licenses; the only license families reported are **MIT** and **Apache-2.0**, with no unexpected incompatible, proprietary, copyleft, or unknown license bucket.
 - [x] CI rejects unexpected development/sensitive paths in the packed artifact; final human tarball inspection remains part of the release-candidate smoke.
-- [x] Source-backed security review completed for the release runtime/package diff with no reportable findings; the final local follow-up is limited to tests and release-document truthfulness.
+- [x] Source-backed security review completed for the release runtime/package diff with no reportable findings; the final local follow-up was limited to tests and release-document truthfulness.
 
 ## F. Public launch surface
 
@@ -73,8 +74,8 @@ This checklist separates pre-release acceptance from launch execution and post-p
 
 ## H. Launch execution and post-publication verification — GitHub
 
-- [ ] Merge the release-readiness PR only after automated and manual gates pass.
-- [x] Confirm the six stale merged development branches listed above remain absent immediately before the public visibility change.
+- [x] PR #7 merged after automated and manual gates passed; merge commit `5cd815513669b8054fad6f995794735ca287269f`.
+- [x] Confirm the six stale merged development branches and the merged release-readiness branch are absent before the public visibility change; only `main` remains.
 - [ ] Make the repository public.
 - [ ] Enable appropriate default-branch protection.
 - [ ] Enable private vulnerability reporting.
