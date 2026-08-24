@@ -90,6 +90,7 @@ export class CodexAdapter implements InstructionAdapter {
           candidates,
           this.#fileAccess,
           input.signal,
+          input.repositoryRoot,
         )
         if (!selected) continue
 

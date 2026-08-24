@@ -12,25 +12,26 @@ import type {
  *
  * The adapter deliberately preserves the caller's absolute logical paths while
  * delegating resolution, identity, I/O, and cancellation to the mounted DSH
- * filesystem provider. This keeps Sightline inside the Harness execution world
- * without coupling the core resolvers to DSH packages.
+ * filesystem provider. Repository-scoped reads additionally use the public
+ * canonical `contains()` seam so symlinks/aliases cannot escape their trust
+ * boundary while still allowing aliases whose resolved target remains inside.
  */
 export function createDshReadOnlyFileAccess(fileSystem: FileSystem): ReadOnlyFileAccess {
   return {
-    async stat(absolutePath, signal) {
-      const target = await resolve(fileSystem, absolutePath, signal)
+    async stat(absolutePath, signal, containmentRoot) {
+      const target = await resolve(fileSystem, absolutePath, signal, containmentRoot)
       const info = await fileSystem.stat(target, signal)
       if (info === undefined) return undefined
       return toFileInfo(info)
     },
 
-    async readText(absolutePath, signal) {
-      const target = await resolve(fileSystem, absolutePath, signal)
+    async readText(absolutePath, signal, containmentRoot) {
+      const target = await resolve(fileSystem, absolutePath, signal, containmentRoot)
       return fileSystem.readText(target, signal)
     },
 
-    async listDir(absolutePath, signal) {
-      const target = await resolve(fileSystem, absolutePath, signal)
+    async listDir(absolutePath, signal, containmentRoot) {
+      const target = await resolve(fileSystem, absolutePath, signal, containmentRoot)
       const info = await fileSystem.stat(target, signal)
       if (info === undefined || info.type !== 'directory') return undefined
 
@@ -45,12 +46,30 @@ export function createDshReadOnlyFileAccess(fileSystem: FileSystem): ReadOnlyFil
   }
 }
 
-async function resolve(fileSystem: FileSystem, absolutePath: string, signal?: AbortSignal) {
+async function resolve(
+  fileSystem: FileSystem,
+  absolutePath: string,
+  signal?: AbortSignal,
+  containmentRoot?: string,
+) {
   signal?.throwIfAborted()
-  return fileSystem.resolve(
+  const target = await fileSystem.resolve(
     absolutePath,
     signal === undefined ? undefined : { signal },
   )
+
+  if (containmentRoot !== undefined) {
+    const root = await fileSystem.resolve(
+      containmentRoot,
+      signal === undefined ? undefined : { signal },
+    )
+    signal?.throwIfAborted()
+    if (!fileSystem.contains(root, target)) {
+      throw new Error(`instruction discovery refused a path outside the repository containment root: ${absolutePath}`)
+    }
+  }
+
+  return target
 }
 
 function toFileInfo(info: {

@@ -13,7 +13,11 @@ permissions:
 
 jobs:
   core:
-    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -24,9 +28,27 @@ jobs:
           corepack enable
           corepack prepare pnpm@11.7.0 --activate
       - name: Install dependencies
-        run: pnpm install --no-frozen-lockfile
+        run: pnpm install --frozen-lockfile
       - name: Check implementation
         run: pnpm run check
+
+  release-audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24.19.0
+      - name: Enable pinned pnpm
+        run: |
+          corepack enable
+          corepack prepare pnpm@11.7.0 --activate
+      - name: Install dependencies without project scripts
+        run: pnpm install --frozen-lockfile --ignore-scripts
+      - name: Audit dependency vulnerabilities
+        run: pnpm audit --audit-level=high
+      - name: Inventory dependency licenses
+        run: pnpm licenses list --json
 
   clean-profile:
     runs-on: ubuntu-latest
@@ -43,9 +65,26 @@ jobs:
           corepack prepare pnpm@11.7.0 --activate
       - name: Build distributable package
         run: |
-          pnpm install --no-frozen-lockfile
+          pnpm install --frozen-lockfile
           mkdir -p .artifacts
           pnpm pack --pack-destination .artifacts
+      - name: Verify packed artifact surface
+        run: |
+          TARBALL="$(find "$GITHUB_WORKSPACE/.artifacts" -name 'dsh-sightline-*.tgz' -print -quit)"
+          test -n "$TARBALL"
+          tar -tzf "$TARBALL" > "$RUNNER_TEMP/sightline-package-files.txt"
+          grep -q '^package/package.json$' "$RUNNER_TEMP/sightline-package-files.txt"
+          grep -q '^package/LICENSE$' "$RUNNER_TEMP/sightline-package-files.txt"
+          grep -q '^package/README.md$' "$RUNNER_TEMP/sightline-package-files.txt"
+          grep -q '^package/client.js$' "$RUNNER_TEMP/sightline-package-files.txt"
+          grep -q '^package/cordis.patch.yml$' "$RUNNER_TEMP/sightline-package-files.txt"
+          grep -q '^package/docs/PACKAGING.md$' "$RUNNER_TEMP/sightline-package-files.txt"
+          grep -q '^package/dist/src/index.js$' "$RUNNER_TEMP/sightline-package-files.txt"
+          if grep -Eq '^package/(tests/|\.github/|node_modules/|\.env($|\.)|pnpm-lock\.yaml$|pnpm-workspace\.yaml$)' "$RUNNER_TEMP/sightline-package-files.txt"; then
+            echo 'unexpected development or sensitive file in package:'
+            grep -E '^package/(tests/|\.github/|node_modules/|\.env($|\.)|pnpm-lock\.yaml$|pnpm-workspace\.yaml$)' "$RUNNER_TEMP/sightline-package-files.txt"
+            exit 1
+          fi
       - name: Install DeepSeek Harness CLI
         run: npm install --global @deepseek-ai/dsh@0.1.1-rc.2
       - name: Install Sightline into a clean profile

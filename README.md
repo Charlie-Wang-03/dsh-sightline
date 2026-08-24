@@ -1,49 +1,28 @@
-# dsh-sightline
+<p align="right">
+  <strong>English</strong> · <a href="./README.zh-CN.md">简体中文</a>
+</p>
+
+# Sightline
 
 **Same repo. Different agents. Different rules.**
 
-See the same workspace through the instruction-discovery semantics of DeepSeek Harness, Codex, and Claude Code.
+See which workspace instruction sources DeepSeek Harness actually loaded — and which Codex and Claude Code would load — for the same repository and working directory.
 
-> Status: private v0.1 implementation. Core comparison, Codex/Claude prediction, DSH observed provenance, and the first DSH `sightline` tool are tested. Bundle packaging and the dedicated DSH client view are now implemented on the v0.1 productization branch and remain subject to clean-profile CI validation before they are claimed complete.
+> **Status: v0.1.0 release candidate.** Core comparison, DSH runtime observation, Codex/Claude prediction, installable DSH bundle packaging, clean-profile validation, and the dedicated DSH Web ToolView are implemented and tested. Public npm publication and repository release remain gated by the release-readiness checklist.
 
-## Product promise
+## Why Sightline
 
-Given one repository and one working directory, Sightline shows the effective instruction surface for each supported agent and makes cross-agent divergence explicit.
+A repository can contain `AGENTS.md`, `CLAUDE.md`, nested instructions, user-global instructions, and Claude rules at the same time. DeepSeek Harness, Codex, and Claude Code do not discover those sources identically.
 
-The v0.1 truth model is deliberately asymmetric:
+That means one workspace can silently present different instruction surfaces to different coding agents.
 
-| Agent | v0.1 evidence |
-| --- | --- |
-| DeepSeek Harness | **Observed** from DSH session/runtime provenance when available |
-| Codex | **Predicted** from documented discovery rules and local files |
-| Claude Code | **Predicted** from documented discovery rules and local files |
+Sightline turns that hidden difference into one compact comparison.
 
-Sightline must never present a prediction as observed runtime fact.
-
-## v0.1 scope
-
-Sightline does four things:
-
-1. **Discover** relevant instruction sources.
-2. **Resolve** each supported agent's effective instruction surface.
-3. **Compare** the surfaces using deterministic, non-semantic rules.
-4. **Visualize** where the surfaces agree, diverge, or cannot be established.
-
-The first release is intentionally not an instruction linter, synchronizer, editor, token optimizer, or semantic conflict detector.
-
-## Current implementation
-
-- Codex predicted adapter: global/project/nested discovery, override preference, configurable fallback names, and project instruction budget.
-- Claude Code predicted adapter: user/project `CLAUDE.md` layering and always-loaded rules; path-scoped rules are conservatively deferred rather than guessed.
-- DSH observed adapter: folds durable typed `agent-instructions` provenance from the current public Session surface and fails closed when authoritative evidence is unavailable.
-- DSH host tool: argument-free `sightline` tool binds observed evidence to `exec.agent.session`, resolves the same `cwd` for all three agents, and runs all host-side static filesystem discovery through the mounted DSH `ctx.fs` capability.
-- Standalone core: Codex/Claude resolvers remain usable outside DSH through the default read-only Node filesystem adapter.
-- Pure cross-agent comparison: preserves `present`, `absent`, and `unknown` as distinct states.
-- GitHub Actions baseline: typecheck, build, resolver tests, DSH provenance integration, real ToolRuntime + SessionStore + `dsh-fs-local` host integration, and the first divergent three-column report fixture.
-
-### First three-column shape
+## What you see
 
 ```text
+Same repo. Different agents. Different rules.
+
                     DSH        Codex       Claude
                   Observed    Predicted    Predicted
 AGENTS.md             ●           ●
@@ -51,6 +30,51 @@ CLAUDE.md              ●                       ●
 packages/api/AGENTS.md ●           ●
 .claude/rules/always.md                         ●
 ```
+
+The Web ToolView renders the same canonical report with explicit evidence badges and `Present` / `Absent` / `Unknown` states.
+
+| Agent | v0.1 evidence |
+| --- | --- |
+| DeepSeek Harness | **Observed** from the live DSH Session's durable typed instruction provenance when available |
+| Codex | **Predicted** from documented discovery rules and local files |
+| Claude Code | **Predicted** from documented memory/rules semantics and local files |
+
+Sightline never presents a prediction as observed runtime fact.
+
+## Install
+
+The primary public v0.1 installation path is the prebuilt npm package:
+
+```sh
+dsh plugin --profile web add dsh-sightline@0.1.0
+```
+
+During release preparation, the npm package is not considered available until the live registry name and first publication are verified. For development from this repository, see [`docs/PACKAGING.md`](docs/PACKAGING.md).
+
+## Use
+
+Start the DSH Web profile after installation:
+
+```sh
+dsh web
+```
+
+In a DSH session rooted in a Git repository, ask the agent to use the `sightline` tool, for example:
+
+```text
+Use sightline and tell me where the DSH, Codex, and Claude instruction views diverge.
+```
+
+Sightline resolves all three views against the same live Session `cwd` and repository root.
+
+## What v0.1 does
+
+1. **Discover** relevant instruction sources.
+2. **Resolve** one effective surface per supported agent.
+3. **Compare** the surfaces with deterministic structural rules.
+4. **Visualize** agreement, divergence, and unknown states in DSH.
+
+The first release intentionally does **not** lint instruction quality, rewrite files, synchronize agents, infer semantic contradictions with an LLM, optimize token use, or claim that a model followed an instruction.
 
 ## Architecture
 
@@ -63,22 +87,83 @@ live DSH tool call + workspace
             |                                                              |
             +---- ctx.fs ---------------> Claude adapter --- Predicted ----+
                                                                            |
-                                                                           +--> tool JSON value
-                                                                           +--> compact matrix
+                                                                           +--> model-facing projection
+                                                                           +--> DSH Web ToolView
 ```
 
-The core comparison layer is pure and agent-agnostic. Agent-specific discovery semantics live behind adapters so they can be versioned, tested, and updated independently. The core filesystem boundary is a minimal read-only capability: standalone consumers default to Node, while the DSH plugin injects the public Harness filesystem seam.
+Agent-specific discovery semantics stay behind adapters. The comparison layer is pure and agent-agnostic. Hosted filesystem discovery uses the public DSH `ctx.fs` capability; standalone resolver use defaults to a minimal read-only Node filesystem adapter.
 
-## Read first
+## Privacy and trust boundary
 
-- [`docs/PRODUCT_CONTRACT.md`](docs/PRODUCT_CONTRACT.md) — what v0.1 must and must not do.
-- [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) — system boundaries, data model, and implementation plan.
-- [`docs/DSH_RUNTIME_SEAM.md`](docs/DSH_RUNTIME_SEAM.md) — the public DSH provenance seam and fail-closed observation contract.
-- [`docs/DSH_HOST_TOOL.md`](docs/DSH_HOST_TOOL.md) — tool ownership, filesystem capability binding, workspace binding, and the first real three-column report.
-- [`docs/PACKAGING.md`](docs/PACKAGING.md) — bundle manifest, client export, and clean-profile validation path.
-- [`docs/COMPATIBILITY.md`](docs/COMPATIBILITY.md) — resolver/runtime compatibility identities and limitations.
-- [`AGENTS.md`](AGENTS.md) — repository rules for AI coding agents and contributors.
+Sightline is local-first and read-only, but "local-first" does not mean that every DSH tool result stays on the machine.
 
-## Compatibility baseline
+- Sightline itself makes no additional network request to a Sightline-owned service.
+- Sightline does not modify instruction files.
+- The full canonical report is retained as DSH tool metadata for the Web ToolView and replay; it includes workspace identity such as `repositoryRoot` / `cwd`, and the ToolView may display the absolute session `cwd` and full diagnostic messages. Anyone who can view that DSH Web session can see those details, subject to DSH Web access controls.
+- The **model-facing projection** is narrower: it contains source identities, evidence labels, presence states, and diagnostic codes while omitting absolute workspace paths and full diagnostic messages by default.
+- That model-facing projection is handled by the model/provider configured for the current DSH session like other DSH tool output.
+- Sightline does not send instruction file bodies to a Sightline-owned service.
 
-The current DSH observed and host/tool integration baseline is DeepSeek Harness `0.1.1-rc.2` at commit `b150a551b8d465e31e418e1b2eaf5e79bbb7d28e`, rechecked on 2026-08-24. DSH is a developer preview, so every later bundle/client integration step must re-verify the public seams it binds to.
+See [`docs/PRODUCT_CONTRACT.md`](docs/PRODUCT_CONTRACT.md) and [`SECURITY.md`](SECURITY.md) for the complete boundary.
+
+## Compatibility
+
+v0.1 is verified against:
+
+- DeepSeek Harness `0.1.1-rc.2`;
+- upstream DSH commit `b150a551b8d465e31e418e1b2eaf5e79bbb7d28e`;
+- Node `^22.19.0 || >=24.0.0`;
+- pnpm `11.7.0`.
+
+DSH is a developer preview. Sightline therefore makes a tested-version claim rather than promising broad compatibility with unverified DSH releases.
+
+Codex and Claude Code adapters similarly carry explicit compatibility identities. Claude path-scoped rules are detected but conservatively deferred when `cwd` alone is insufficient to prove that the rule is active.
+
+See [`docs/COMPATIBILITY.md`](docs/COMPATIBILITY.md).
+
+## Verification
+
+Current automated coverage includes:
+
+- package/bundle/client surface tests;
+- Codex global, project, nested, override, fallback, and budget behavior;
+- Claude user/project memory and always-loaded rule behavior;
+- fail-closed handling of path-scoped Claude rules;
+- DSH durable provenance folding and incompatible-source handling;
+- real DSH `ToolRuntime + SessionStore + dsh-fs-local` host integration;
+- canonical three-column report generation;
+- clean-profile packed-artifact installation and export resolution;
+- browser ToolView registration/render smoke tests;
+- Windows/POSIX path normalization.
+
+Run the local gate with:
+
+```sh
+pnpm run check
+```
+
+## Documentation
+
+| Document | Purpose |
+| --- | --- |
+| [`docs/PRODUCT_CONTRACT.md`](docs/PRODUCT_CONTRACT.md) | v0.1 product, evidence, privacy, and non-goal contract |
+| [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) | system boundaries and data model |
+| [`docs/DSH_RUNTIME_SEAM.md`](docs/DSH_RUNTIME_SEAM.md) | authoritative DSH provenance seam |
+| [`docs/DSH_HOST_TOOL.md`](docs/DSH_HOST_TOOL.md) | live-session ownership and filesystem binding |
+| [`docs/COMPATIBILITY.md`](docs/COMPATIBILITY.md) | resolver/runtime compatibility identities |
+| [`docs/PACKAGING.md`](docs/PACKAGING.md) | npm/bundle packaging and clean-profile validation |
+| [`docs/RELEASE_CHECKLIST.md`](docs/RELEASE_CHECKLIST.md) | public v0.1 release gates |
+
+## Contributing
+
+Issues and focused pull requests are welcome once the repository is public. Read [`CONTRIBUTING.md`](CONTRIBUTING.md) and [`AGENTS.md`](AGENTS.md) before making non-trivial changes.
+
+Security-sensitive reports should follow [`SECURITY.md`](SECURITY.md).
+
+## License
+
+MIT. See [`LICENSE`](LICENSE).
+
+## Project relationship
+
+Sightline is an independent community project for the DeepSeek Harness ecosystem. It is not an official DeepSeek product and is not endorsed by DeepSeek unless explicitly stated by DeepSeek.

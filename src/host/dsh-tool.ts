@@ -121,7 +121,13 @@ export async function findRepositoryRoot(
   }
 }
 
-/** Compact model-facing rendering of the same canonical report returned by the tool. */
+/**
+ * Compact model-facing rendering of the canonical report.
+ *
+ * Keep this intentionally narrower than presentationMeta: absolute workspace
+ * paths and full diagnostic messages can contain host-specific/private detail,
+ * while the DSH Web ToolView may still consume the full local canonical report.
+ */
 export function formatSightlineReportMarkdown(report: SightlineReport): string {
   const labels = {
     dsh: `DSH (${evidenceLabel(report.surfaces.dsh.evidence)})`,
@@ -131,8 +137,6 @@ export function formatSightlineReportMarkdown(report: SightlineReport): string {
 
   const lines = [
     'Same repo. Different agents. Different rules.',
-    '',
-    `cwd: ${report.cwd}`,
     '',
     `| Source | ${labels.dsh} | ${labels.codex} | ${labels.claude} |`,
     '| --- | --- | --- | --- |',
@@ -150,7 +154,7 @@ export function formatSightlineReportMarkdown(report: SightlineReport): string {
   }
 
   const diagnostics = Object.values(report.surfaces).flatMap((surface) =>
-    surface.diagnostics.map((diagnostic) => `${surface.agent}: ${diagnostic.code} — ${diagnostic.message}`),
+    surface.diagnostics.map((diagnostic) => `${surface.agent}: ${diagnostic.code}`),
   )
   if (diagnostics.length > 0) {
     lines.push('', 'Diagnostics:', ...diagnostics.map((diagnostic) => `- ${diagnostic}`))
