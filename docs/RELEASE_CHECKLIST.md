@@ -24,21 +24,21 @@ This checklist is the release gate for the first public Sightline release. Passi
 - [x] package manifest is publishable and uses `publishConfig.access: public`.
 - [x] installable DSH bundle and Web client exports are implemented.
 - [x] clean-profile packed-artifact installation has passed.
-- [ ] Commit a current `pnpm-lock.yaml` generated with pnpm 11.7.0.
-- [ ] Change CI installs to `pnpm install --frozen-lockfile`.
+- [x] `pnpm-lock.yaml` generated and committed with pnpm 11.7.0.
+- [x] CI installs with `pnpm install --frozen-lockfile`.
 - [x] CI verifies the packed artifact contains required public surfaces and rejects unexpected development/sensitive paths.
 - [ ] Verify the live npm package name `dsh-sightline` is available or choose the final package name.
 
 ## D. Verification
 
 - [x] TypeScript typecheck exists.
-- [x] Automated suite passes **19 / 19** on the release-readiness branch.
+- [x] Automated suite passes **19 / 19** on the release-readiness branch before the frozen-lockfile gate.
 - [x] Real DSH `ToolRuntime + SessionStore + dsh-fs-local` integration exists.
 - [x] Browser ToolView registration/render smoke exists.
 - [x] Clean-profile CI exists.
 - [x] Human Windows DSH Web smoke has been completed against `0.1.1-rc.2` on the pre-hardening v0.1 package.
-- [x] Release-readiness CI run `32688134342` passes on Ubuntu, Windows, and clean-profile packed installation.
-- [ ] Run final Windows local smoke from the final release-candidate artifact after the lockfile/frozen-install change.
+- [ ] Confirm the final frozen-lockfile release-readiness CI passes on Ubuntu, Windows, and clean-profile packed installation.
+- [ ] Run final Windows local smoke from the final release-candidate artifact.
 
 ## E. Security and privacy release gate
 
