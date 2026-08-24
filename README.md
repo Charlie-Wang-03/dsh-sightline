@@ -4,7 +4,7 @@
 
 See the same workspace through the instruction-discovery semantics of DeepSeek Harness, Codex, and Claude Code.
 
-> Status: private v0.1 implementation. Core comparison, Codex/Claude prediction, DSH observed provenance, and the first DSH `sightline` tool are tested; installable bundle and UI work remain.
+> Status: private v0.1 implementation. Core comparison, Codex/Claude prediction, DSH observed provenance, and the first DSH `sightline` tool are tested. Bundle packaging and the dedicated DSH client view are now implemented on the v0.1 productization branch and remain subject to clean-profile CI validation before they are claimed complete.
 
 ## Product promise
 
@@ -75,6 +75,7 @@ The core comparison layer is pure and agent-agnostic. Agent-specific discovery s
 - [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) — system boundaries, data model, and implementation plan.
 - [`docs/DSH_RUNTIME_SEAM.md`](docs/DSH_RUNTIME_SEAM.md) — the public DSH provenance seam and fail-closed observation contract.
 - [`docs/DSH_HOST_TOOL.md`](docs/DSH_HOST_TOOL.md) — tool ownership, filesystem capability binding, workspace binding, and the first real three-column report.
+- [`docs/PACKAGING.md`](docs/PACKAGING.md) — bundle manifest, client export, and clean-profile validation path.
 - [`docs/COMPATIBILITY.md`](docs/COMPATIBILITY.md) — resolver/runtime compatibility identities and limitations.
 - [`AGENTS.md`](AGENTS.md) — repository rules for AI coding agents and contributors.
 

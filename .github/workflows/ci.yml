@@ -2,6 +2,7 @@ name: CI
 
 on:
   pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
   push:
     branches:
       - main
@@ -24,5 +25,36 @@ jobs:
           corepack prepare pnpm@11.7.0 --activate
       - name: Install dependencies
         run: pnpm install --no-frozen-lockfile
-      - name: Check core implementation
+      - name: Check implementation
         run: pnpm run check
+
+  clean-profile:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24.19.0
+      - name: Configure isolated DSH home
+        run: echo "DSH_HOME=$RUNNER_TEMP/dsh-sightline-home" >> "$GITHUB_ENV"
+      - name: Enable pinned pnpm
+        run: |
+          corepack enable
+          corepack prepare pnpm@11.7.0 --activate
+      - name: Build distributable package
+        run: |
+          pnpm install --no-frozen-lockfile
+          mkdir -p .artifacts
+          pnpm pack --pack-destination .artifacts
+      - name: Install DeepSeek Harness CLI
+        run: npm install --global @deepseek-ai/dsh@0.1.1-rc.2
+      - name: Install Sightline into a clean profile
+        run: |
+          TARBALL="$(find "$GITHUB_WORKSPACE/.artifacts" -name 'dsh-sightline-*.tgz' -print -quit)"
+          test -n "$TARBALL"
+          dsh plugin --profile sightline-smoke add "$TARBALL"
+      - name: Verify composed layer and installed exports
+        run: |
+          dsh --profile sightline-smoke --dump-config > "$RUNNER_TEMP/sightline-config.yml"
+          grep -q "dsh-sightline" "$RUNNER_TEMP/sightline-config.yml"
+          node scripts/verify-installed-profile.mjs "$DSH_HOME/profiles/sightline-smoke"

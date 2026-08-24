@@ -65,6 +65,10 @@ test('real DSH ToolRuntime and ctx.fs produce the first three-column Sightline r
     assert.equal(result.isError, false)
     const report = result.value as unknown as SightlineReport
 
+    // The client panel consumes replayable ToolResult meta. It must be the same
+    // canonical report, not a separately derived UI projection.
+    assert.deepEqual(result.meta, result.value)
+
     assert.equal(report.repositoryRoot, repositoryRoot)
     assert.equal(report.cwd, cwd)
     assert.equal(report.surfaces.dsh.evidence, 'observed')

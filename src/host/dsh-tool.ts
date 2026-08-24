@@ -24,13 +24,7 @@ const DEFAULT_PROJECT_ROOT_MARKERS = ['.git'] as const
 const INCOMPATIBLE_OUTPUT_MESSAGE =
   'Sightline report unavailable: the stored tool value does not match the current report shape.'
 
-/**
- * Register the first model-facing Sightline surface in DSH.
- *
- * DSH host registration always binds static discovery to the public `ctx.fs`
- * capability. Standalone resolver/tool construction may still use the default
- * Node filesystem implementation outside Harness.
- */
+/** Register the model-facing Sightline surface in DSH. */
 export function apply(ctx: Context, options: SightlineToolOptions = {}): void {
   ctx.tools.register(createSightlineTool(options, createDshReadOnlyFileAccess(ctx.fs)))
 }
@@ -53,6 +47,10 @@ export function createSightlineTool(
           text: formatSightlineToolValue(value),
         },
       ],
+      // Persist the same canonical report as replayable presentation metadata.
+      // The browser client reads this structured value directly instead of
+      // reparsing the lossy model-facing Markdown projection.
+      presentationMeta: (_args, value) => value,
     },
     isConcurrencySafe: () => true,
     async execute(_args, exec) {
@@ -91,9 +89,6 @@ export function createSightlineTool(
       )
       exec.signal.throwIfAborted()
 
-      // The canonical report is deliberately JSON-only. Materializing it once
-      // strips TypeScript readonly/interface identity and optional `undefined`
-      // fields before it crosses DSH's generic JSON tool-output boundary.
       return JSON.parse(JSON.stringify(report))
     },
   })
@@ -102,8 +97,7 @@ export function createSightlineTool(
 /**
  * Match DSH's default project-root behavior without importing an internal
  * instruction-discovery implementation: walk upward to the first marker and
- * fall back to cwd when none exists. The caller supplies the filesystem
- * execution world; standalone callers default to Node while DSH supplies ctx.fs.
+ * fall back to cwd when none exists.
  */
 export async function findRepositoryRoot(
   cwd: string,
@@ -165,11 +159,7 @@ export function formatSightlineReportMarkdown(report: SightlineReport): string {
   return lines.join('\n')
 }
 
-/**
- * DSH may replay older tool values or policy-replaced generic JSON. Rendering is
- * presentation-only, so it must stay total instead of throwing on an obsolete
- * or incompatible value.
- */
+/** Keep replay/policy-replaced presentation total across schema drift. */
 export function formatSightlineToolValue(value: unknown): string {
   if (!looksLikeSightlineReport(value)) return INCOMPATIBLE_OUTPUT_MESSAGE
   try {
@@ -207,24 +197,18 @@ function isEvidence(value: unknown): value is SightlineReport['surfaces']['dsh']
 
 function evidenceLabel(value: SightlineReport['surfaces']['dsh']['evidence']): string {
   switch (value) {
-    case 'observed':
-      return 'Observed'
-    case 'predicted':
-      return 'Predicted'
-    case 'unavailable':
-      return 'Unavailable'
+    case 'observed': return 'Observed'
+    case 'predicted': return 'Predicted'
+    case 'unavailable': return 'Unavailable'
   }
 }
 
 function presenceMark(value: 'present' | 'absent' | 'unknown' | undefined): string {
   switch (value) {
-    case 'present':
-      return '●'
-    case 'absent':
-      return ''
+    case 'present': return '●'
+    case 'absent': return ''
     case 'unknown':
-    case undefined:
-      return '?'
+    case undefined: return '?'
   }
 }
 
