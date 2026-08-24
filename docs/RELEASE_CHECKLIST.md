@@ -28,6 +28,7 @@ This checklist separates pre-release acceptance from launch execution and post-p
 - [x] `pnpm-lock.yaml` generated and committed with pnpm 11.7.0.
 - [x] CI installs with `pnpm install --frozen-lockfile`.
 - [x] CI verifies the packed artifact contains required public surfaces and rejects unexpected development/sensitive paths.
+- [x] The source manifest intentionally retains `prepare: pnpm run build:host` for source/Git installs; `pnpm pack` runs that build and omits `prepare` from the packed manifest. The exact tarball and installed profile contain neither `prepare` nor `install`, so normal npm installation uses the prebuilt artifacts without rebuilding Sightline.
 - [x] Live npm lookup returned `E404 Not Found` for `dsh-sightline` on 2026-08-24; recheck immediately before first publication because name availability is race-prone.
 
 ## D. Verification
@@ -40,12 +41,12 @@ This checklist separates pre-release acceptance from launch execution and post-p
 - [x] Human Windows DSH Web smoke has been completed against `0.1.1-rc.2` on the pre-hardening v0.1 package.
 - [x] CI run `32691715922` passes Ubuntu core, Windows core, release dependency audit, packed-artifact validation, and clean-profile installation/export resolution.
 - [x] Final Windows engineering checks and isolated-profile installation/export resolution pass from the packed release-candidate artifact.
-- [ ] Complete the final human DSH Web ToolView visual smoke from the exact release-candidate artifact.
+- [x] Final exact-artifact DSH Web smoke passed on 2026-08-24 with `dsh@0.1.1-rc.2` and tarball SHA-256 `aca658c5a8e3aa7cbb1ffce44a20c617d678004676e0478c3fe14feee5a399a1`: real authenticated sessions invoked `sightline`; Web replay rendered the three agent columns, `Observed` / `Predicted` / `Unavailable`, Present / Absent / Unknown, target `cwd`, and diagnostics. The model-facing result omitted absolute workspace paths and full diagnostic messages, while the fuller ToolView retained them as documented.
 
 ## E. Security and privacy release gate
 
 - [x] Source-backed review identified the repository-symlink containment issue; commit `7f99b314d3c801ccc7f4224dbcd96e6834a35dd7` fixes it and CI covers external-escape rejection plus legitimate internal symlinks.
-- [x] Gitleaks 8.30.1 scanned the full history reachable from all local refs at the final local release-candidate commit with redacted output and reported **no leaks found**.
+- [x] Gitleaks 8.30.1 evidence is retained at both scopes: the pre-prune full-ref scan covered **64 commits** with no leaks and exit 0; after stale remote refs were pruned, the reachable-ref scan covered **26 commits** with no leaks. The count differs because the six stale remote branch refs were removed; rerun the reachable-ref scan after every final evidence commit before handoff.
 - [x] Audit commit author/committer metadata for the complete history reachable from `main` plus the current release-readiness branch: maintainer-authored commits use `133667618+Charlie-Wang-03@users.noreply.github.com`, and GitHub-created commits use `noreply@github.com`.
 - [x] After `git fetch --prune origin` on 2026-08-24, the stale merged development refs are absent; only `origin/main`, `origin/release/v0.1.0-readiness`, and `origin/HEAD` remain.
 - [x] Dependency vulnerability review: CI run `32691715922` executes `pnpm audit --audit-level=high` from the frozen lockfile with project scripts disabled and reports **No known vulnerabilities found**.
