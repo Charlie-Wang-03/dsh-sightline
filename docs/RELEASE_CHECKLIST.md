@@ -29,7 +29,7 @@ This checklist separates pre-release acceptance from launch execution and post-p
 - [x] CI installs with `pnpm install --frozen-lockfile`.
 - [x] CI verifies the packed artifact contains required public surfaces and rejects unexpected development/sensitive paths.
 - [x] The source manifest intentionally retains `prepare: pnpm run build:host` for source/Git installs; `pnpm pack` runs that build and omits `prepare` from the packed manifest. The exact tarball and installed profile contain neither `prepare` nor `install`, so normal npm installation uses the prebuilt artifacts without rebuilding Sightline.
-- [x] Live npm lookup returned `E404 Not Found` for `dsh-sightline` on 2026-08-24; recheck immediately before first publication because name availability is race-prone.
+- [x] Live npm lookup returned `E404 Not Found` for `dsh-sightline` immediately before first publication on 2026-08-24; the exact verified `dsh-sightline@0.1.0` artifact was then published successfully and is now the `latest` registry version.
 
 ## D. Verification
 
@@ -65,12 +65,12 @@ This checklist separates pre-release acceptance from launch execution and post-p
 
 ## G. Launch execution — npm publishing
 
-- [ ] Confirm npm account access and package-name availability.
-- [ ] Decide and configure the first-publish authentication path.
-- [ ] Prefer npm Trusted Publishing + provenance after the package/publisher relationship can be configured.
-- [ ] Publish the exact prebuilt `0.1.0` artifact.
-- [ ] Verify `npm view dsh-sightline@0.1.0` metadata and package contents after publication.
-- [ ] Verify a clean DSH profile can install from npm, not from the repository checkout.
+- [x] npm maintainer account access confirmed immediately before publication; `charlie-wang-03` was authenticated, the account email was verified, `auth-and-writes` 2FA was enabled, and the package name still returned `E404` immediately before first publish.
+- [x] First-publish authentication path completed through npm CLI browser authentication with account 2FA; no long-lived publish token was added to the repository.
+- [ ] Prefer npm Trusted Publishing + provenance for subsequent releases after the package/publisher relationship is configured.
+- [x] Published the exact prebuilt `dsh-sightline@0.1.0` artifact on 2026-08-24. The published input tarball SHA-256 is `aca658c5a8e3aa7cbb1ffce44a20c617d678004676e0478c3fe14feee5a399a1`.
+- [x] Verified live registry metadata after publication: `dsh-sightline@0.1.0` is `latest`, license is MIT, repository metadata points to `Charlie-Wang-03/dsh-sightline`, and the maintainer is `charlie-wang-03`. A fresh `npm pack dsh-sightline@0.1.0` download produced the same SHA-256 `aca658c5a8e3aa7cbb1ffce44a20c617d678004676e0478c3fe14feee5a399a1`, closing the exact-artifact identity loop.
+- [x] Verified the public npm user path in an isolated `DSH_HOME` using `@deepseek-ai/dsh@0.1.1-rc.2`: `dsh plugin --profile npm-v010 add dsh-sightline@0.1.0` succeeded, composed config contained the `dsh-sightline` plugin row, and `scripts/verify-installed-profile.mjs` resolved both the Host entry and `dsh-sightline/client` from the isolated profile's `node_modules`, not from the source checkout.
 
 ## H. Launch execution and post-publication verification — GitHub
 
@@ -97,4 +97,4 @@ The release candidate is **NO-GO** while any of the following remain unresolved:
 - final release candidate CI or smoke failing;
 - live npm package-name lookup reports a conflict.
 
-When Sections A-E pass except for explicitly identified manual or external gates, the correct pre-release verdict is **CONDITIONAL GO**, not a circular failure caused by work that can only happen after approval. npm account authentication, Trusted Publishing configuration, publication itself, public-repository settings, tags, releases, and post-publication verification belong to the launch sequence in Sections G-H. Optional launch-polish items in Section F are proportional trade-offs rather than automatic blockers.
+Sections A-E now pass and the npm launch/post-publication checks in Section G are complete except for the intentionally deferred Trusted Publishing/provenance migration for subsequent releases. The exact verified npm artifact is public and has passed registry-to-clean-profile validation. The remaining v0.1.0 launch work is the GitHub public-release sequence in Section H plus optional proportional polish in Section F. The current state is **GO for GitHub public launch**, subject to those explicit GitHub actions and their post-change verification.
