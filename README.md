@@ -8,7 +8,7 @@
 
 See which workspace instruction sources DeepSeek Harness actually loaded — and which Codex and Claude Code would load — for the same repository and working directory.
 
-> **Status: v0.1.0 release candidate.** Core comparison, DSH runtime observation, Codex/Claude prediction, installable DSH bundle packaging, clean-profile validation, and the dedicated DSH Web ToolView are implemented and tested. Public npm publication and repository release remain gated by the release-readiness checklist.
+> **Status: v0.1.0.** The first public release is available on npm and GitHub Releases. Core comparison, DSH runtime observation, Codex/Claude prediction, installable DSH bundle packaging, clean-profile validation, and the dedicated DSH Web ToolView are implemented and tested.
 
 ## Why Sightline
 
@@ -49,7 +49,7 @@ The primary public v0.1 installation path is the prebuilt npm package:
 dsh plugin --profile web add dsh-sightline@0.1.0
 ```
 
-During release preparation, the npm package is not considered available until the live registry name and first publication are verified. For development from this repository, see [`docs/PACKAGING.md`](docs/PACKAGING.md).
+The package is published on npm as `dsh-sightline@0.1.0`. For development from this repository, see [`docs/PACKAGING.md`](docs/PACKAGING.md).
 
 ## Use
 
@@ -156,7 +156,7 @@ pnpm run check
 
 ## Contributing
 
-Issues and focused pull requests are welcome once the repository is public. Read [`CONTRIBUTING.md`](CONTRIBUTING.md) and [`AGENTS.md`](AGENTS.md) before making non-trivial changes.
+Issues and focused pull requests are welcome. Read [`CONTRIBUTING.md`](CONTRIBUTING.md) and [`AGENTS.md`](AGENTS.md) before making non-trivial changes.
 
 Security-sensitive reports should follow [`SECURITY.md`](SECURITY.md).
 

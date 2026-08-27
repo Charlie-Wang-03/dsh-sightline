@@ -8,7 +8,7 @@
 
 在同一个仓库、同一个工作目录下，直接比较 DeepSeek Harness 实际加载了哪些工作区指令，以及 Codex 和 Claude Code 按各自规则会加载哪些指令。
 
-> **状态：v0.1.0 Release Candidate。** 核心比较、DSH 运行时观测、Codex / Claude 预测、可安装的 DSH Bundle、clean-profile 验证以及专用 DSH Web ToolView 均已实现并测试。公开 npm 发布与 GitHub Release 仍受发布清单约束。
+> **状态：v0.1.0。** 首个公开版本现已通过 npm 与 GitHub Releases 发布。核心比较、DSH 运行时观测、Codex / Claude 预测、可安装的 DSH Bundle、clean-profile 验证以及专用 DSH Web ToolView 均已实现并测试。
 
 ## 为什么需要 Sightline
 
@@ -59,9 +59,7 @@ v0.1 的主要公开分发方式是预构建 npm 包：
 dsh plugin --profile web add dsh-sightline@0.1.0
 ```
 
-在 Release 准备阶段，只有在实时 npm Registry 中确认包名并完成首次发布后，才会把上述命令视为真正可用的公开安装路径。
-
-从源码或本地 tarball 开发时，请阅读 [`docs/PACKAGING.md`](docs/PACKAGING.md)。
+该包已在 npm 发布为 `dsh-sightline@0.1.0`。从源码或本地 tarball 开发时，请阅读 [`docs/PACKAGING.md`](docs/PACKAGING.md)。
 
 ## 使用
 
@@ -175,7 +173,7 @@ pnpm run check
 
 ## 贡献
 
-仓库公开后欢迎高质量 Issue 和聚焦的 Pull Request。进行非小型修改前，请先阅读 [`CONTRIBUTING.md`](CONTRIBUTING.md) 与 [`AGENTS.md`](AGENTS.md)。
+欢迎高质量 Issue 和聚焦的 Pull Request。进行非小型修改前，请先阅读 [`CONTRIBUTING.md`](CONTRIBUTING.md) 与 [`AGENTS.md`](AGENTS.md)。
 
 安全问题请按 [`SECURITY.md`](SECURITY.md) 的方式报告。
 
