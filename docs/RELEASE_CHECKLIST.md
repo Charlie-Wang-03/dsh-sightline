@@ -60,7 +60,7 @@ This checklist separates pre-release acceptance from launch execution and post-p
 - [x] English README rewritten around product value, proof, quick start, trust boundary, compatibility, and verification.
 - [x] Simplified Chinese README added as a first-class entry path.
 - [ ] Add one real, publication-safe Sightline ToolView screenshot to the README if it materially improves the launch page.
-- [ ] Configure GitHub repository Description and Topics after public release preparation is complete.
+- [x] GitHub repository Description and discovery Topics are configured on the public repository.
 - [ ] Configure a social preview image if one is available and publication-safe.
 
 ## G. Launch execution — npm publishing
@@ -76,12 +76,12 @@ This checklist separates pre-release acceptance from launch execution and post-p
 
 - [x] PR #7 merged after automated and manual gates passed; merge commit `5cd815513669b8054fad6f995794735ca287269f`.
 - [x] Confirm the six stale merged development branches and the merged release-readiness branch are absent before the public visibility change; only `main` remains.
-- [ ] Make the repository public.
-- [ ] Enable appropriate default-branch protection.
+- [x] Repository is public.
+- [x] Default branch is protected by the active repository ruleset `Protect main`.
 - [ ] Enable private vulnerability reporting.
-- [ ] Add `dsh-plugin` and related discovery topics.
-- [ ] Create signed/annotated release tag `v0.1.0` according to the final repository release policy.
-- [ ] Publish GitHub Release notes tied to the exact tested commit.
+- [x] Repository discovery topics include `dsh-plugin` and related Agent / DSH topics.
+- [x] Annotated release tag `v0.1.0` exists and identifies the public release.
+- [x] GitHub Release `v0.1.0` is published with release notes, the verified package asset, and `SHA256SUMS.txt`.
 - [ ] Verify all public README links, install commands, license surfaces, and security links after visibility changes.
 
 ## Release decision
@@ -97,4 +97,6 @@ The release candidate is **NO-GO** while any of the following remain unresolved:
 - final release candidate CI or smoke failing;
 - live npm package-name lookup reports a conflict.
 
-Sections A-E now pass and the npm launch/post-publication checks in Section G are complete except for the intentionally deferred Trusted Publishing/provenance migration for subsequent releases. The exact verified npm artifact is public and has passed registry-to-clean-profile validation. The remaining v0.1.0 launch work is the GitHub public-release sequence in Section H plus optional proportional polish in Section F. The current state is **GO for GitHub public launch**, subject to those explicit GitHub actions and their post-change verification.
+Sections A-E passed before release. The exact verified npm artifact and GitHub Release `v0.1.0` are public, the release asset identity is closed with SHA-256 evidence, the repository is public, discovery metadata is configured, and the default branch is protected. **The v0.1.0 public launch is complete.**
+
+Unchecked items above are retained as explicit follow-up or optional polish rather than rewritten as historical success: private vulnerability reporting still needs direct verification if required, full public-link verification remains a maintenance task, npm Trusted Publishing/provenance is deferred to a future release, and screenshot/social-preview polish is optional.
